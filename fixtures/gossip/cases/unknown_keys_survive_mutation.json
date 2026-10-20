@@ -1,0 +1,35 @@
+{
+  "name": "unknown_keys_survive_mutation",
+  "description": "Mutating a known field must not disturb unknown keys.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true,
+    "zzz_future_key": "kept",
+    "aaa_future_key": {
+      "b": 2,
+      "a": 1
+    },
+    "mid_future_list": [
+      3,
+      1,
+      2
+    ]
+  },
+  "operations": [
+    {
+      "op": "add_root_ip",
+      "args": [
+        "192.0.2.11"
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    },\n    {\n      \"Ip\": \"192.0.2.11\"\n    }\n  ],\n  \"try_new_peers\": true,\n  \"aaa_future_key\": {\n    \"a\": 1,\n    \"b\": 2\n  },\n  \"mid_future_list\": [\n    3,\n    1,\n    2\n  ],\n  \"zzz_future_key\": \"kept\"\n}\n",
+    "warnings": []
+  }
+}

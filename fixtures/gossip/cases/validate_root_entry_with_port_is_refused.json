@@ -1,0 +1,24 @@
+{
+  "name": "validate_root_entry_with_port_is_refused",
+  "description": "The entry has no port field.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10",
+        "port": 8080
+      }
+    ]
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips[0]"
+    }
+  }
+}

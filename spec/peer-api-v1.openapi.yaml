@@ -1,0 +1,1549 @@
+openapi: 3.1.0
+info:
+  title: Hyperliquid Peer API v1
+  version: "1.0.0"
+  summary: Public, filterable peer directory for automating hl-node peer selection.
+  description: |
+    A node runner's query surface over the Hyperliquid peer graph: "give me
+    peers in DE", "every tier-1 peer with a free gossip slot", "all sentries".
+    The intended terminal output is an `override_gossip_config.json` — see
+    `format=gossip_config`.
+
+    **Paths are relative to the server URL.** A client takes the base URL as
+    configuration and never hardcodes a path prefix. This document is served
+    at `<base>/openapi.yaml`.
+
+    ## Access tiers
+
+    | tier | credential | purpose |
+    |---|---|---|
+    | anonymous | none | evaluation, one-shot config generation |
+    | free | `Authorization: Bearer <key>` | routine automation |
+    | paid | same | large-scale automation |
+
+    Anonymous callers get the same *fields* as keyed callers. What differs is
+    rate and page size — never truthfulness. A degraded answer that looks
+    authoritative is worse than a 429.
+
+    ## Honesty rules
+
+    * Three-state enums are never folded. `unknown` means *never observed*;
+      it is not `no` and not `false`.
+    * `null` is "not provided", never zero.
+    * `connectable` is an **estimate**, not a guarantee. See its schema.
+    * A producer that cannot currently build the graph answers `200` with
+      `available: false`. `503` is reserved for a genuine producer fault.
+
+    ## Privacy posture
+
+    The API returns only what our scan of the public gossip network returns —
+    topology, heights and reachability — plus enrichment of that data: tier
+    and labels, geo/ASN from public IP data, uptime, and `blocks_behind`. A
+    node's IP appears only if the scan observed it. There is no opt-out
+    mechanism.
+
+    Two per-peer signals are published beside the scan: `mempool` (does the
+    peer serve the mempool) and `auction` (the peer's status in the on-chain
+    gossip read-priority auction). `null` means unknown in both.
+
+    ## Geo accuracy
+
+    Country labels carry `cc_confidence` (`high` / `medium` / `low`: how
+    confident the label is) and `cc_source`. A label we have reason to doubt
+    is not published (`cc: null`). `region` is set only for cloud-hosted
+    peers.
+    Country and ASN data come from IPinfo Lite: IP address data is powered
+    by [IPinfo](https://ipinfo.io) (CC BY-SA 4.0). Where the network map
+    serves city clusters (`cities`), their positions come from DB-IP City
+    Lite: [IP Geolocation by DB-IP](https://db-ip.com) (CC BY 4.0). A peer
+    then carries only its cluster id (`city`); no per-IP coordinate is
+    published. The attribution for every source in use is also in every
+    response (`attribution`).
+
+    ## Versioning
+
+    Paths carry no version. The major version is in every body
+    (`version: "v1"`) and in the `API-Version` response header. Additive
+    changes land in v1 at any time; a breaking change would ship under `/v2`.
+
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: Peer API
+    url: https://hypervisor.gg/docs/peer-api
+
+servers:
+  - url: https://api.hypervisor.gg
+    description: Production. Paths are at the host root.
+
+tags:
+  - name: peers
+    description: Query and inspect peers.
+  - name: discovery
+    description: Discover the valid values of every filter.
+
+security:
+  - {}                       # anonymous is a first-class caller
+  - bearerApiKey: []
+
+paths:
+  /peers:
+    get:
+      tags: [peers]
+      operationId: listPeers
+      summary: List peers matching a filter.
+      description: |
+        Filter families **AND** together; CSV values within one family **OR**.
+        An unrecognised member of a closed enum is a `400`, never a silent drop
+        — a typo'd bucket that quietly matched nothing reads to an operator as a
+        finding about the network.
+
+        `limit`/`cursor` are clamped rather than rejected: a caller asking for
+        10 000 rows wants as many as we will give.
+
+        An UNKNOWN query parameter is a `400` `unknown-parameter`: a typo'd
+        family name that was ignored would return the unfiltered set to a
+        caller who believes it is filtered. A parameter removed from the
+        contract is a `400` `filter-removed`.
+
+        Sort order always ends in the IP as a tiebreak, so pages are stable
+        within one data generation. `out_deg` sorts ascending,
+        `last_seen` newest first; a missing value sorts last.
+      parameters:
+        - $ref: '#/components/parameters/Chain'
+        - $ref: '#/components/parameters/Cc'
+        - $ref: '#/components/parameters/Country'
+        - $ref: '#/components/parameters/Region'
+        - $ref: '#/components/parameters/Asn'
+        - $ref: '#/components/parameters/Tier'
+        - $ref: '#/components/parameters/MaxTier'
+        - $ref: '#/components/parameters/Role'
+        - $ref: '#/components/parameters/Label'
+        - $ref: '#/components/parameters/Connectable'
+        - $ref: '#/components/parameters/Accepting'
+        - $ref: '#/components/parameters/State'
+        - $ref: '#/components/parameters/MaxBlocksBehind'
+        - $ref: '#/components/parameters/MinUptime'
+        - $ref: '#/components/parameters/MaxLatencyMs'
+        - $ref: '#/components/parameters/Vantage'
+        - $ref: '#/components/parameters/SeenWithin'
+        - $ref: '#/components/parameters/Version'
+        - $ref: '#/components/parameters/ServesMempool'
+        - $ref: '#/components/parameters/Auction'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Format'
+        - $ref: '#/components/parameters/TryNewPeers'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: |
+            A page of peers. `available: false` means the producer could not
+            build a graph — `peers` is then empty and that is not a finding
+            about the network.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+            RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+            RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PeerList' }
+              examples:
+                inCountry:
+                  summary: "Peers in DE (`cc=DE`)"
+                  description: |
+                    `cc` is the broadest geo key; `region` is coarser and is
+                    populated for fewer peers.
+                  value:
+                    version: v1
+                    available: true
+                    stale: false
+                    chain: Mainnet
+                    generated_at: "2026-09-21T02:35:00Z"
+                    next_sweep_at: "2026-09-21T02:40:00Z"
+                    count: 2
+                    total: 2
+                    next_cursor: null
+                    peers:
+                      - id: "192.0.2.10"
+                        tier: 1
+                        state: responsive
+                        role: sentry
+                        cc: DE
+                        region: null
+                        asn: null
+                        org: null
+                        operator: "Example Operator"
+                        name: "Example Operator"
+                        in_deg: 3
+                        out_deg: 5
+                        latest_height: 812345678
+                        blocks_behind: 0
+                        live: true
+                        connectable: "yes"
+                        labels: [sentry]
+                        last_seen: "2026-09-21T02:34:58Z"
+                        uptime: null
+                        version: null
+                      - id: "192.0.2.11"
+                        tier: 2
+                        state: responsive
+                        role: null
+                        cc: DE
+                        region: null
+                        asn: null
+                        org: null
+                        operator: null
+                        name: null
+                        in_deg: 1
+                        out_deg: 2
+                        latest_height: 812345677
+                        blocks_behind: 1
+                        live: true
+                        connectable: "yes"
+                        labels: []
+                        last_seen: "2026-09-21T02:34:58Z"
+                        uptime: null
+                        version: null
+                notFullInRegion:
+                  summary: "peers estimated to have a free inbound slot in a region"
+                  description: |
+                    `accepting=true` is the honest name for this. It selects
+                    `connectable: "yes"`, which is an estimate, not a
+                    guarantee — it can be wrong in both directions.
+                  value:
+                    version: v1
+                    available: true
+                    stale: false
+                    chain: Mainnet
+                    generated_at: "2026-09-21T02:35:00Z"
+                    next_sweep_at: "2026-09-21T02:40:00Z"
+                    count: 1
+                    total: 14
+                    next_cursor: "eyJvIjoxfQ"
+                    peers:
+                      - id: "198.51.100.7"
+                        tier: 1
+                        state: responsive
+                        role: null
+                        cc: SG
+                        region: null
+                        asn: null
+                        org: null
+                        operator: null
+                        name: null
+                        in_deg: 2
+                        out_deg: 1
+                        latest_height: 812345678
+                        blocks_behind: 0
+                        live: true
+                        connectable: "yes"
+                        labels: []
+                        last_seen: "2026-09-21T02:34:58Z"
+                        uptime: null
+                        version: null
+                tierOne:
+                  summary: "all tier-1 peers (exact, not a ceiling)"
+                  description: |
+                    `tier=1` is EXACT. The pre-existing `max_tier` parameter is a
+                    ceiling and would also return tier 0. Both are offered and
+                    they are not interchangeable.
+                  value:
+                    version: v1
+                    available: true
+                    stale: false
+                    chain: Mainnet
+                    generated_at: "2026-09-21T02:35:00Z"
+                    next_sweep_at: "2026-09-21T02:40:00Z"
+                    count: 1
+                    total: 137
+                    next_cursor: "eyJvIjoxfQ"
+                    peers:
+                      - id: "198.51.100.20"
+                        tier: 1
+                        state: responsive
+                        role: null
+                        cc: JP
+                        region: null
+                        asn: null
+                        org: null
+                        operator: null
+                        name: null
+                        in_deg: 4
+                        out_deg: 6
+                        latest_height: 812345678
+                        blocks_behind: 0
+                        live: true
+                        connectable: "no"
+                        labels: []
+                        last_seen: "2026-09-21T02:34:58Z"
+                        uptime: null
+                        version: null
+                sentries:
+                  summary: "all sentry peers"
+                  description: |
+                    `label=sentry` selects the sentry peers. `tier=0` returns
+                    the same set today, but they are different questions and
+                    may diverge; a client should ask the one it means.
+                  value:
+                    version: v1
+                    available: true
+                    stale: false
+                    chain: Mainnet
+                    generated_at: "2026-09-21T02:35:00Z"
+                    next_sweep_at: "2026-09-21T02:40:00Z"
+                    count: 1
+                    total: 61
+                    next_cursor: "eyJvIjoxfQ"
+                    peers:
+                      - id: "192.0.2.200"
+                        tier: 0
+                        state: responsive
+                        role: sentry
+                        cc: US
+                        region: null
+                        asn: null
+                        org: null
+                        operator: null
+                        name: "Foundation #13"
+                        in_deg: 0
+                        out_deg: 8
+                        latest_height: 812345678
+                        blocks_behind: 0
+                        live: true
+                        connectable: "no"
+                        labels: [tier0, sentry, "sentry:foundation"]
+                        last_seen: "2026-09-21T02:34:58Z"
+                        uptime: null
+                        version: null
+                unavailable:
+                  summary: Producer cannot build the graph (availability, not error)
+                  value:
+                    version: v1
+                    available: false
+                    stale: false
+                    chain: Mainnet
+                    generated_at: null
+                    next_sweep_at: null
+                    count: 0
+                    total: 0
+                    next_cursor: null
+                    peers: []
+            application/json; profile="gossip-config":
+              schema: { $ref: '#/components/schemas/GossipConfig' }
+              examples:
+                gossipConfig:
+                  summary: "format=gossip_config — drop-in override file"
+                  description: |
+                    The exact bytes an operator writes to the node's gossip
+                    override file, in the minimal form hl-node accepts.
+                  value:
+                    root_node_ips:
+                      - Ip: "192.0.2.10"
+                      - Ip: "192.0.2.11"
+                      - Ip: "198.51.100.7"
+                    try_new_peers: true
+                    chain: Mainnet
+        '304':
+          description: Not modified — the caller's `If-None-Match` matched.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
+  /peers/{ip}:
+    get:
+      tags: [peers]
+      operationId: getPeer
+      summary: One peer's public dossier.
+      description: |
+        A malformed IPv4 is a `400`; a well-formed IPv4 we have never seen is a
+        `404`. The two must not collapse into one answer — a client generating a
+        config needs to tell "you typed it wrong" from "we do not know it".
+      parameters:
+        - name: ip
+          in: path
+          required: true
+          description: IPv4 address. IPv6 is not supported.
+          schema:
+            type: string
+            format: ipv4
+          example: "192.0.2.10"
+        - $ref: '#/components/parameters/Chain'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The peer.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+            RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PeerEnvelope' }
+              examples:
+                found:
+                  value:
+                    version: v1
+                    available: true
+                    stale: false
+                    chain: Mainnet
+                    generated_at: "2026-09-21T02:35:00Z"
+                    peer:
+                      id: "192.0.2.10"
+                      tier: 1
+                      state: responsive
+                      role: sentry
+                      cc: DE
+                      region: null
+                      asn: null
+                      org: null
+                      operator: "Example Operator"
+                      name: "Example Operator"
+                      in_deg: 3
+                      out_deg: 5
+                      feeders: ["192.0.2.200"]
+                      latest_height: 812345678
+                      blocks_behind: 0
+                      live: true
+                      connectable: "yes"
+                      labels: [sentry]
+                      last_seen: "2026-09-21T02:34:58Z"
+                      uptime: null
+                      version: null
+        '304':
+          description: Not modified.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
+  /peers/facets:
+    get:
+      tags: [discovery]
+      operationId: getPeerFacets
+      summary: The valid values of every filter, with counts.
+      description: |
+        Discovery, so a client never hardcodes a region list or guesses a label.
+        Counts are over the CURRENT published graph after any filters supplied
+        here, so a client can pre-check that a query will match something before
+        paging it.
+
+        A facet whose underlying attribute is not collected is present with
+        `available: false` and an empty `values` list — distinguishable from a
+        facet that is collected and happens to be empty.
+
+        Facets: `tier`, `cc`, `region`, `asn`, `role`, `label`, `state`,
+        `connectable`, `version`, `uptime`. Closed enums (`label`, `state`,
+        `connectable`) are zero-filled. `uptime` values are `min_uptime`
+        thresholds with CUMULATIVE counts (the count at `"0.95"` is what
+        `min_uptime=0.95` returns) plus `"null"` for no reading.
+      parameters:
+        - $ref: '#/components/parameters/Chain'
+        - $ref: '#/components/parameters/Cc'
+        - $ref: '#/components/parameters/Country'
+        - $ref: '#/components/parameters/Region'
+        - $ref: '#/components/parameters/Asn'
+        - $ref: '#/components/parameters/Tier'
+        - $ref: '#/components/parameters/MaxTier'
+        - $ref: '#/components/parameters/Role'
+        - $ref: '#/components/parameters/Label'
+        - $ref: '#/components/parameters/Connectable'
+        - $ref: '#/components/parameters/Accepting'
+        - $ref: '#/components/parameters/State'
+        - $ref: '#/components/parameters/MaxBlocksBehind'
+        - $ref: '#/components/parameters/MinUptime'
+        - $ref: '#/components/parameters/MaxLatencyMs'
+        - $ref: '#/components/parameters/Vantage'
+        - $ref: '#/components/parameters/SeenWithin'
+        - $ref: '#/components/parameters/Version'
+        - $ref: '#/components/parameters/ServesMempool'
+        - $ref: '#/components/parameters/Auction'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Facet values and counts.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Facets' }
+              examples:
+                facets:
+                  value:
+                    version: v1
+                    available: true
+                    stale: false
+                    chain: Mainnet
+                    generated_at: "2026-09-21T02:35:00Z"
+                    total: 912
+                    facets:
+                      tier:
+                        available: true
+                        values:
+                          - { value: "0", count: 61 }
+                          - { value: "1", count: 137 }
+                          - { value: "2", count: 604 }
+                          - { value: "null", count: 110 }
+                      cc:
+                        available: true
+                        values:
+                          - { value: "JP", count: 341 }
+                          - { value: "DE", count: 122 }
+                          - { value: "US", count: 118 }
+                      region:
+                        available: false
+                        values: []
+                      asn:
+                        available: false
+                        values: []
+                      role:
+                        available: true
+                        values:
+                          - { value: "sentry", count: 61 }
+                          - { value: "null", count: 851 }
+                      label:
+                        available: true
+                        values:
+                          - { value: "tier0", count: 61 }
+                          - { value: "sentry", count: 61 }
+                          - { value: "sentry:foundation", count: 25 }
+                          - { value: "sentry:operator", count: 36 }
+                          - { value: "unreachable", count: 94 }
+                      state:
+                        available: true
+                        values:
+                          - { value: "responsive", count: 818 }
+                          - { value: "open", count: 0 }
+                          - { value: "full", count: 0 }
+                          - { value: "syncing", count: 0 }
+                          - { value: "unreachable", count: 94 }
+                          - { value: "unknown", count: 0 }
+                      connectable:
+                        available: true
+                        values:
+                          - { value: "yes", count: 517 }
+                          - { value: "no", count: 301 }
+                          - { value: "unknown", count: 94 }
+                      version:
+                        available: false
+                        values: []
+                      uptime:
+                        available: true
+                        values:
+                          - { value: "0.99", count: 402 }
+                          - { value: "0.95", count: 611 }
+                          - { value: "0.9", count: 700 }
+                          - { value: "0.5", count: 790 }
+                          - { value: "null", count: 122 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
+  /network-map/graph:
+    get:
+      tags: [peers]
+      operationId: getNetworkMapGraph
+      summary: The whole published peer graph — nodes, edges and the tier histogram.
+      description: |
+        The same published node set as `/peers` (each node carries the same
+        fields as a `/peers` row), plus the directed `edges` between published
+        nodes and a tier histogram. A node or edge that `/peers` does not
+        publish is never here either.
+
+        **Access:** public. The anonymous tier may call it without a key, under
+        the same anonymous rate limits as `/peers`; a key raises the limits to its plan. A present but
+        invalid key is a `401`.
+
+        Filters narrow the node set; edges are kept only between surviving
+        nodes. A producer that cannot currently build the graph answers `200`
+        with `available: false`.
+      parameters:
+        - { name: max_tier, in: query, description: "Only nodes at tier <= this.", schema: { type: integer, minimum: 0 } }
+        - { name: show_unreached, in: query, description: "Include nodes with `tier: null`.", schema: { type: boolean, default: true } }
+        - { name: hide_unreachable, in: query, description: "Drop nodes whose `state` is `unreachable`.", schema: { type: boolean, default: false } }
+        - { name: connectable, in: query, description: "CSV over `yes`, `no`, `unknown`.", schema: { type: string } }
+        - { name: cc, in: query, description: "ISO 3166-1 alpha-2 country code.", schema: { type: string } }
+        - { name: operator, in: query, schema: { type: string } }
+        - { name: label, in: query, schema: { type: string } }
+        - $ref: '#/components/parameters/ServesMempool'
+        - $ref: '#/components/parameters/Auction'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The graph.
+          headers:
+            API-Version: { $ref: '#/components/headers/ApiVersion' }
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NetworkMapGraph' }
+        '304':
+          description: Not modified (free, keyed or anonymous).
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
+  /network-map/summary:
+    get:
+      tags: [peers]
+      operationId: getNetworkMapSummary
+      summary: The graph envelope and per-bucket counts, without nodes or edges.
+      description: |
+        `/network-map/graph` after the same filters, without `nodes`, `edges`
+        and `truncated`, plus zero-filled counts for `connectable`,
+        `serves_mempool` and `auction`.
+
+        **Access:** public, like `/network-map/graph` (anonymous tier without
+        a key; a key raises the limits to its plan).
+      parameters:
+        - { name: max_tier, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: show_unreached, in: query, schema: { type: boolean, default: true } }
+        - { name: hide_unreachable, in: query, schema: { type: boolean, default: false } }
+        - { name: connectable, in: query, schema: { type: string } }
+        - { name: cc, in: query, schema: { type: string } }
+        - { name: operator, in: query, schema: { type: string } }
+        - { name: label, in: query, schema: { type: string } }
+        - $ref: '#/components/parameters/ServesMempool'
+        - $ref: '#/components/parameters/Auction'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The summary.
+          headers:
+            API-Version: { $ref: '#/components/headers/ApiVersion' }
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NetworkMapSummary' }
+        '304':
+          description: Not modified (free, keyed or anonymous).
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
+  /openapi.yaml:
+    get:
+      tags: [discovery]
+      operationId: getOpenApiDocument
+      summary: This document.
+      description: Served byte-for-byte from the committed file, behind the same flag.
+      security:
+        - {}
+      responses:
+        '200':
+          description: The OpenAPI 3.1 document.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/yaml:
+              schema: { type: string }
+        '304':
+          description: Not modified.
+
+components:
+  securitySchemes:
+    bearerApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: "hlp_live_<26 chars>"
+      description: |
+        An API key. Omit it entirely to call anonymously — anonymous
+        is a supported tier, not an error state. A key that is present but
+        invalid is a `401`; a key that is absent is not.
+
+  headers:
+    ApiVersion:
+      description: The API major version (`1`). Sent on every response, errors included; informational.
+      schema: { type: string, const: "1" }
+    ETag:
+      description: |
+        Strong validator computed from the published snapshot's content
+        fingerprint plus the normalised query — before any body is built, so
+        a matching `If-None-Match` is cheap. Identical content and query give
+        the same ETag on every replica. `If-None-Match: *` is not honoured.
+      schema: { type: string }
+      example: '"sha256-3f1c…"'
+    CacheControl:
+      description: |
+        The data is refreshed every few minutes, so a short max-age is
+        correct. `public` for anonymous responses, `private` for
+        keyed ones; both vary on `Authorization` / `X-API-Key`. Anonymous
+        (shared-cacheable) responses carry `RateLimit-Policy` but NOT the
+        per-client `RateLimit-Limit/-Remaining/-Reset` triple; a `429` carries
+        it and is `no-store`.
+      schema: { type: string }
+      example: "public, max-age=60"
+    RateLimitLimit:
+      description: IETF draft-ietf-httpapi-ratelimit-headers. Quota units in the expiring window.
+      schema: { type: integer }
+      example: 20
+    RateLimitRemaining:
+      description: Quota units remaining in the current window.
+      schema: { type: integer }
+      example: 17
+    RateLimitReset:
+      description: Seconds until the current window resets.
+      schema: { type: integer }
+      example: 42
+    RateLimitPolicy:
+      description: The full policy, including the daily cap a client cannot see from the window alone.
+      schema: { type: string }
+      example: '"anon-min";q=20;w=60, "anon-day";q=2000;w=86400'
+    RetryAfter:
+      description: Seconds to wait. Always present on a 429.
+      schema: { type: integer }
+      example: 42
+
+  parameters:
+    Chain:
+      name: chain
+      in: query
+      description: |
+        `Mainnet` or `Testnet`. **Only `Mainnet` is served today** — the
+        producer serves one chain, fixed per deployment. A
+        `Testnet` request is an explicit `400` with type `chain-not-served`
+        rather than a silently-Mainnet answer, which would be the single most
+        dangerous wrong answer this API could give.
+      schema:
+        type: string
+        enum: [Mainnet, Testnet]
+        default: Mainnet
+    Cc:
+      name: cc
+      in: query
+      description: |
+        ISO-3166-1 alpha-2 country codes, CSV (`null` selects peers with no
+        published country). Every published peer is enriched. A peer whose
+        label we doubt has `cc: null` and is not matched. Check
+        `cc_confidence` / `cc_source`.
+      schema: { type: string }
+      example: "DE,NL"
+    Country:
+      name: country
+      in: query
+      description: Alias of `cc` (same values, same semantics). Both given ⇒ one family, their union.
+      schema: { type: string }
+      example: "JP"
+    Region:
+      name: region
+      in: query
+      description: |
+        Cloud region label `provider:region` (e.g. `aws:ap-northeast-1`), CSV
+        (`null` selects peers with no region). Published only from a cloud
+        provider's own IP-range file. While
+        this generation carries no geo data (`/peers/facets` →
+        `region.available: false`) a `region` filter is a `400`
+        `filter-unavailable`, never an empty result set that reads as "no
+        peers there".
+      schema: { type: string }
+      example: "aws:ap-northeast-1"
+    Asn:
+      name: asn
+      in: query
+      description: |
+        Autonomous system, CSV, `AS…` form (a bare number is accepted and
+        normalised). Same `filter-unavailable` discipline as `region`.
+      schema: { type: string }
+      example: "AS24940"
+    Tier:
+      name: tier
+      in: query
+      description: |
+        EXACT tier match, CSV. `null` is a selectable member meaning "never
+        placed in the peer graph" — a client must never synthesise a tier.
+
+        Tier is the distance from the network's sentry nodes in the peer
+        graph. `tier: 0` means "this node is a sentry"; it is NOT a hop count
+        to a validator. A third-party explorer's "hops to
+        validator" is a different quantity and the two will legitimately differ.
+      schema: { type: string }
+      example: "1"
+    MaxTier:
+      name: max_tier
+      in: query
+      description: Tier CEILING (inclusive). Not a synonym for `tier` — `max_tier=1` also returns tier 0.
+      schema: { type: integer, minimum: 0 }
+      example: 2
+    Role:
+      name: role
+      in: query
+      description: |
+        Role label, CSV. Sourced from third-party enrichment and explicitly "a
+        HINT, never truth"; the scan itself sets no role. Prefer `label` for
+        sentry selection.
+      schema: { type: string }
+      example: "sentry"
+    Label:
+      name: label
+      in: query
+      description: |
+        CSV over the published label set: `tier0`, `sentry`, `sentry:foundation`,
+        `sentry:operator`, `unreachable`. The set is an allowlist.
+        A client treats an unknown label as renderable-but-unstyled, never as an
+        error — the set may grow additively within v1.
+      schema: { type: string }
+      example: "sentry:foundation"
+    Connectable:
+      name: connectable
+      in: query
+      description: CSV over `yes`, `no`, `unknown`. See the `connectable` schema for what this actually measures.
+      schema: { type: string }
+      example: "yes"
+    Accepting:
+      name: accepting
+      in: query
+      description: |
+        `true` is exactly `connectable=yes`; `false` is `connectable=no`. Neither
+        includes `unknown`. Offered because "not full" is how operators say it,
+        and mapping it here keeps the estimate caveat attached to one schema.
+      schema: { type: boolean }
+      example: true
+    State:
+      name: state
+      in: query
+      description: |
+        CSV over `responsive`, `open`, `full`, `syncing`, `listening`,
+        `unreachable`, `unknown`. `responsive` = answered our scan; `open` =
+        accepting new inbound peers; `full` = not accepting new inbound peers
+        right now; `syncing` = catching up; `listening` = accepts inbound
+        connections, other details unknown; `unreachable` = not reachable;
+        `unknown` = never observed. For the estimated "has a free inbound
+        slot" use `accepting`.
+      schema: { type: string }
+      example: "responsive"
+    MaxBlocksBehind:
+      name: max_blocks_behind
+      in: query
+      description: |
+        Inclusive ceiling on `blocks_behind`. A peer with NO height reading is
+        EXCLUDED, because including it would silently rank an unmeasured peer
+        alongside a measured-healthy one.
+      schema: { type: integer, minimum: 0 }
+      example: 5
+    MinUptime:
+      name: min_uptime
+      in: query
+      description: |
+        Minimum `uptime`, 0..1. A peer with no uptime reading never passes —
+        unknown is not "up". `filter-unavailable` while the uptime facet is
+        unavailable.
+      schema: { type: number, minimum: 0, maximum: 1 }
+      example: 0.95
+    MaxLatencyMs:
+      name: max_latency_ms
+      in: query
+      description: |
+        Ceiling on observed latency from `vantage`. **Not available** — always a
+        `400` `filter-unavailable`. Reserved.
+      schema: { type: integer, minimum: 0 }
+      example: 80
+    Vantage:
+      name: vantage
+      in: query
+      description: |
+        Anonymised measurement vantage for `max_latency_ms`, e.g. `eu`, `apac`,
+        `us`. Never a box name. Required when `max_latency_ms` is given.
+      schema: { type: string }
+      example: "eu"
+    SeenWithin:
+      name: seen_within
+      in: query
+      description: |
+        Keep peers whose `last_seen` is within this duration. Accepts `5m`,
+        `1h`, `24h`, `7d`. The data is refreshed every few minutes, so a value
+        below `10m` selects on refresh timing rather than on peer health.
+      schema:
+        type: string
+        pattern: '^[0-9]+[mhd]$'
+      example: "1h"
+    Version:
+      name: version
+      in: query
+      description: |
+        Version, CSV. `filter-unavailable` unless this deployment publishes
+        versions (see `/peers/facets`).
+      schema: { type: string }
+    ServesMempool:
+      name: serves_mempool
+      in: query
+      description: |
+        Serves the mempool, CSV of `true`, `false`, `null` (`null` = unknown).
+        Selects on `mempool` → `serves`. `filter-unavailable` when no mempool
+        data is available for this generation (see `/peers/facets`).
+      schema:
+        type: string
+        pattern: '^(true|false|null)(,(true|false|null))*$'
+      example: "true"
+    Auction:
+      name: auction
+      in: query
+      description: |
+        Gossip read-priority auction status, CSV of `holds_slot`, `bidding`,
+        `bid_before`, `null` (`null` = never seen in the auction). Selects on
+        `auction.status`.
+      schema:
+        type: string
+        pattern: '^(holds_slot|bidding|bid_before|null)(,(holds_slot|bidding|bid_before|null))*$'
+      example: "holds_slot"
+    Sort:
+      name: sort
+      in: query
+      description: |
+        `last_seen` (default: most recently seen first),
+        `tier` (ascending), `blocks_behind`, `out_deg`, `random`. An unknown value is a `400`: silently falling back would rank
+        the list by something the caller did not ask for.
+
+        `random` exists on purpose. If every client sorts by the same key, every
+        client picks the same head peers and the API becomes a centralising
+        force on the network it describes. `random` is seeded per key per data
+        generation so a client's page set is stable within a generation.
+      schema:
+        type: string
+        enum: [tier, blocks_behind, out_deg, last_seen, random]
+        default: last_seen
+    Limit:
+      name: limit
+      in: query
+      description: |
+        Page size. Clamped into `[1, ceiling]`, never a 400 (a non-integer is).
+        The ceiling is tier-dependent and configured (50 anonymous, 500 keyed
+        by default). With `format=gossip_config` it is further capped at the
+        root cap (24 by default).
+      schema: { type: integer, minimum: 1, default: 50 }
+      example: 100
+    Cursor:
+      name: cursor
+      in: query
+      description: |
+        Opaque, signed page cursor from `next_cursor` (valid 24 h). It is
+        bound to the data generation it was issued in and to the query; paging
+        across a generation boundary returns `400` `cursor-expired` rather than a
+        silently-mixed page, and reusing it with another filter or sort is
+        `400` `invalid-cursor`. For `sort=random` the cursor carries the
+        order's seed, so a client whose IP changes mid-listing keeps one
+        order.
+      schema: { type: string }
+    Fields:
+      name: fields
+      in: query
+      description: |
+        CSV of peer field names to return. `id` is always included. An unknown
+        field name is a `400` — a typo that silently returned fewer fields would
+        surface as a null downstream.
+      schema: { type: string }
+      example: "id,tier,cc,connectable"
+    Format:
+      name: format
+      in: query
+      description: |
+        `json` (default) or `gossip_config`. `gossip_config` returns the override
+        file hl-node reads at start, built from the filtered result, with
+        content type
+        `application/json; profile="gossip-config"`.
+
+        🪤 `gossip_config` ignores `fields` and applies its own ordering and
+        size cap. It is a rendering of the result, not a projection of it.
+      schema:
+        type: string
+        enum: [json, gossip_config]
+        default: json
+    TryNewPeers:
+      name: try_new_peers
+      in: query
+      description: |
+        `format=gossip_config` only: the emitted file's `try_new_peers`.
+        Default `true`. `false` with a one-entry list is the only evidenced
+        way to pin a node.
+      schema: { type: boolean, default: true }
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      description: Conditional request. A matching validator yields `304` and costs no quota unit.
+      schema: { type: string }
+
+  schemas:
+    Peer:
+      type: object
+      description: |
+        One peer as published. Every field here is named by a positive allowlist
+        in the producer; nothing is projected by exclusion.
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: ipv4
+          description: The peer's IPv4. Stable identity; the graph is keyed on it.
+          examples: ["192.0.2.10"]
+        tier:
+          type: [integer, "null"]
+          description: Distance from the network's sentry nodes in the peer graph; tier 0 = sentries. `null` = never placed; NOT tier 0.
+          examples: [1]
+        state:
+          type: [string, "null"]
+          description: |
+            `responsive` | `open` | `full` | `syncing` | `listening` |
+            `unreachable` | `unknown`. Open enum: unknown strings render unstyled.
+            `responsive` = answered our scan (the common case); `open` =
+            accepting new inbound peers; `full` = not accepting new inbound peers
+            right now; `syncing` = catching up; `listening` = accepts inbound
+            connections, other details unknown; `unreachable` = not reachable;
+            `unknown` = never observed.
+          examples: ["responsive"]
+        role:
+          type: [string, "null"]
+          description: Third-party role hint. Free-form, open enum.
+        cc:
+          type: [string, "null"]
+          description: |
+            ISO-3166-1 alpha-2 country. `null` when unknown OR when we doubt
+            the label. Read it with `cc_confidence` and `cc_source`.
+          examples: ["DE"]
+        cc_confidence:
+          type: [string, "null"]
+          enum: [high, medium, low, null]
+          description: |
+            How confident the country label is: `high`, `medium` or `low`.
+            `null` when `cc` is `null`.
+        cc_source:
+          type: [string, "null"]
+          enum: [cloud-range, db, db+rtt-confirmed, null]
+          description: Where `cc` came from. `null` when `cc` is `null`.
+        region:
+          type: [string, "null"]
+          description: |
+            Cloud provider region `provider:region` (e.g. `aws:ap-northeast-1`),
+            for cloud-hosted peers. `null` for every other peer.
+        asn:
+          type: [string, "null"]
+          description: |
+            `AS…` token from public IP data, for every published peer. `null`
+            when no ASN is known for the IP.
+          examples: ["AS24940"]
+        org:
+          type: [string, "null"]
+          description: The AS name from the same database row as `asn`.
+        city:
+          type: [string, "null"]
+          description: |
+            Present only when the producer serves city clusters (see
+            `NetworkMapGraph.cities`): the id of this peer's city cluster, or
+            `null` when the peer is placed by its cloud `region`, its country,
+            or not at all. Never a coordinate.
+          examples: ["JP-tokyo"]
+        operator:
+          type: [string, "null"]
+          description: Hosting or operator label. Third-party or curated; not on-chain-verified.
+        name:
+          type: [string, "null"]
+          description: |
+            Public display name. Foundation sentries render `Foundation #N`;
+            others carry an operator or curated moniker. `null` means nothing
+            public names this peer and the client should render the bare IP.
+        in_deg:
+          type: integer
+          description: In-degree over the PUBLISHED edge set, recomputed after projection.
+        out_deg:
+          type: integer
+          description: |
+            Out-degree over the PUBLISHED edge set.
+        feeders:
+          type: array
+          items: { type: string, format: ipv4 }
+          description: Peers that feed this one, intersected with the published node set.
+        latest_height:
+          type: [integer, "null"]
+          description: Last observed block height.
+        blocks_behind:
+          type: [integer, "null"]
+          description: |
+            Height delta against the network median tip. 🪤 A node that has
+            stopped advancing can still report a height; only advancement
+            clears a reading.
+        live:
+          type: [boolean, "null"]
+          description: Observed recently. `null` = no observation.
+        connectable:
+          type: string
+          enum: ["yes", "no", "unknown"]
+          description: |
+            🪤 An ESTIMATE of whether the peer has room for another inbound
+            peer — not a guarantee, and it can be wrong in both directions.
+            `unknown` is not `no`.
+        labels:
+          type: array
+          items: { type: string }
+          description: Allowlisted public tags. Treat an unknown label as renderable, never as an error.
+        last_seen:
+          type: [string, "null"]
+          format: date-time
+          description: |
+            Last time our scan saw this peer answer. Granularity is the data
+            refresh interval (a few minutes).
+        version:
+          type: [string, "null"]
+          description: |
+            The peer's reported software version. **`null` unless the
+            deployment publishes versions. `/peers/facets` reports
+            `version.available`.
+        uptime:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 1
+          description: |
+            Share of our checks the peer answered, over a trailing window.
+            `null` = too few checks to say — never zero.
+        mempool:
+          $ref: '#/components/schemas/MempoolSignal'
+        auction:
+          $ref: '#/components/schemas/AuctionSignal'
+
+    MempoolSignal:
+      type: object
+      description: |
+        Does this peer serve the mempool? `source` says which of our
+        measurements produced the verdict (`probe` or `relay`); `null` when
+        none has. 🔴 `serves: null` = unknown — NOT "no".
+      required: [serves, last_checked, verdict, first_frame_ms, source]
+      properties:
+        serves:
+          type: [boolean, "null"]
+          description: '`true` serves the mempool, `false` does not, `null` unknown.'
+        last_checked:
+          type: [string, "null"]
+          format: date-time
+          description: When the verdict was last observed.
+        verdict:
+          type: [string, "null"]
+          description: |
+            An open machine token for the outcome (e.g. `serves`). Render an
+            unknown token as plain text.
+          examples: ["serves"]
+        first_frame_ms:
+          type: [integer, "null"]
+          minimum: 0
+          description: Milliseconds to the first mempool message. `null` unless `serves` is true.
+        source:
+          type: [string, "null"]
+          enum: [probe, relay, null]
+          description: Which of our measurements produced the verdict.
+
+    AuctionSignal:
+      type: object
+      description: |
+        The peer's status in the on-chain gossip read-priority auction (public
+        chain data). `holds_slot` — its IP currently holds read-priority slot
+        `slot` (since `since`, the start of the round it won). `bidding` — bid
+        within the last 6 hours, holds no slot now. `bid_before` — bid or won
+        in the past, not within 6 hours. `null` — never seen in the auction.
+      required: [status, slot, since, last_bid_at]
+      properties:
+        status:
+          type: [string, "null"]
+          enum: [holds_slot, bidding, bid_before, null]
+        slot:
+          type: [integer, "null"]
+          description: The held slot id (the lowest, if several). `null` unless `holds_slot`.
+        since:
+          type: [string, "null"]
+          format: date-time
+          description: Start of the auction round in which the held slot was won. `null` unless `holds_slot`.
+        last_bid_at:
+          type: [string, "null"]
+          format: date-time
+          description: The last bid (or win) seen from this IP.
+
+    Envelope:
+      type: object
+      description: The standing fields on every successful response.
+      required: [version, available, stale, chain]
+      properties:
+        version: { type: string, const: v1 }
+        available:
+          type: boolean
+          description: |
+            `false` = the producer could not build a graph. The payload is then
+            empty and that emptiness is NOT a finding about the network.
+        stale:
+          type: boolean
+          description: |
+            The served snapshot is older than the staleness bound. Check
+            `available` FIRST — a dark subsystem reports both as false.
+        chain: { type: string, enum: [Mainnet, Testnet] }
+        generated_at:
+          type: [string, "null"]
+          format: date-time
+          description: When the underlying data was generated.
+        next_sweep_at:
+          type: [string, "null"]
+          format: date-time
+          description: |
+            When the data is next refreshed. Published so a client can
+            align its polling to the data instead of guessing — polling faster
+            returns identical bytes. A conditional request (`If-None-Match`)
+            answered `304` costs no quota, keyed or anonymous.
+        attribution:
+          type: [string, "null"]
+          description: |
+            Licence attribution for the geo/ASN data in this response:
+            "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA
+            4.0" (IPinfo Lite). With city positions served, DB-IP's credit is
+            appended: "; IP Geolocation by DB-IP (https://db-ip.com), CC BY
+            4.0". Required by the data licences wherever the geo fields are
+            shown.
+
+    PeerList:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required: [peers, count]
+          properties:
+            count:
+              type: integer
+              description: Peers in THIS page.
+            total:
+              type: [integer, "null"]
+              description: Peers matching the filter across all pages.
+            next_cursor:
+              type: [string, "null"]
+              description: Pass as `cursor` for the next page. `null` = last page.
+            peers:
+              type: array
+              items: { $ref: '#/components/schemas/Peer' }
+
+    PeerEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required: [peer]
+          properties:
+            peer:
+              description: The peer. `null` only while `available` is false.
+              oneOf:
+                - $ref: '#/components/schemas/Peer'
+                - type: "null"
+
+    Facets:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required: [facets]
+          properties:
+            total: { type: integer }
+            facets:
+              type: object
+              additionalProperties: { $ref: '#/components/schemas/Facet' }
+            geo_coverage:
+              description: |
+                How much of the published directory carries each geo field, and
+                at which `cc_confidence` (shares in 0..1), plus the database
+                edition. `null` when this deployment publishes no geo data.
+              oneOf:
+                - type: "null"
+                - type: object
+                  properties:
+                    peers: { type: integer }
+                    asn: { type: number }
+                    cc: { type: number }
+                    region: { type: number }
+                    cc_confidence:
+                      type: object
+                      additionalProperties: { type: number }
+                    withheld_contradicted:
+                      type: integer
+                      description: Peers whose country label was withheld because we doubt it.
+                    source: { type: [string, "null"] }
+                    db_version: { type: [string, "null"] }
+
+    Facet:
+      type: object
+      required: [available, values]
+      properties:
+        available:
+          type: boolean
+          description: |
+            `false` = the attribute behind this filter is not collected. An empty
+            `values` under `available: true` means it IS collected and nothing
+            currently matches. The two are different answers.
+        values:
+          type: array
+          items:
+            type: object
+            required: [value, count]
+            properties:
+              value:
+                type: string
+                description: 'The literal filter value. `"null"` is the selectable absent-value member.'
+              count: { type: integer }
+
+    GossipConfig:
+      type: object
+      description: |
+        The hl-node gossip override file (`override_gossip_config.json`),
+        minimal form. hl-node reads it at start; the node cannot start with an
+        empty `root_node_ips`, which is why this API never emits one.
+      required: [root_node_ips, try_new_peers, chain]
+      properties:
+        root_node_ips:
+          type: array
+          description: Bootstrap peers, in the order the API ranked them.
+          items:
+            type: object
+            required: [Ip]
+            properties:
+              Ip:
+                type: string
+                format: ipv4
+                description: '🪤 Capital `I`, lowercase `p`. The spelling is load-bearing.'
+        try_new_peers:
+          type: boolean
+          description: Whether the node may discover peers beyond this list.
+        chain:
+          type: string
+          enum: [Mainnet, Testnet]
+
+    NetworkMapEdge:
+      type: object
+      required: [from, to, span]
+      properties:
+        from: { type: string, description: A published node id. }
+        to: { type: string, description: A published node id. }
+        span:
+          type: [integer, "null"]
+          description: "`tier(to) - tier(from)`; `null` if either end is unplaced."
+
+    NetworkMapTier:
+      type: object
+      required: [tier, count]
+      properties:
+        tier: { type: integer }
+        count: { type: integer }
+
+    NetworkMapGraph:
+      type: object
+      required: [version, available, stale]
+      properties:
+        version: { type: string }
+        available: { type: boolean }
+        stale: { type: boolean }
+        generated_at: { type: [string, "null"], format: date-time }
+        operator_nodes:
+          type: object
+          properties:
+            count:
+              type: [integer, "null"]
+              description: "`null` when the producer's own nodes are published as ordinary rows."
+        node_count: { type: integer }
+        edge_count: { type: integer }
+        tier_count: { type: integer }
+        unreached: { type: integer }
+        truncated: { type: boolean }
+        tiers:
+          type: array
+          items: { $ref: '#/components/schemas/NetworkMapTier' }
+        nodes:
+          type: array
+          items: { $ref: '#/components/schemas/Peer' }
+        edges:
+          type: array
+          items: { $ref: '#/components/schemas/NetworkMapEdge' }
+        attribution:
+          type: [string, "null"]
+          description: |
+            Present only with `cities`: the credits for every geo source in
+            use, e.g. "IP address data is powered by IPinfo
+            (https://ipinfo.io), CC BY-SA 4.0; IP Geolocation by DB-IP
+            (https://db-ip.com), CC BY 4.0". Show it wherever the map is shown.
+        cities:
+          type: array
+          description: |
+            Present only when the producer serves city positions. Server-side
+            city clusters over the returned nodes, biggest first. The only
+            coordinates in the API: each is the city's own point, rounded.
+          items: { $ref: '#/components/schemas/CityCluster' }
+
+    CityCluster:
+      type: object
+      required: [id, name, cc, lat, lon, peers, tiers]
+      properties:
+        id: { type: string, description: "Stable cluster id, `<CC>-<city>` (state-qualified when a name repeats in a country).", examples: ["JP-tokyo"] }
+        name: { type: string, examples: ["Tokyo"] }
+        cc: { type: string, description: ISO-3166-1 alpha-2; always equals the `cc` of its peers. }
+        lat: { type: number, description: "Latitude of the city, rounded to 0.1°." }
+        lon: { type: number, description: "Longitude of the city, rounded to 0.1°." }
+        peers: { type: integer, description: Peers in this cluster (after any filter). }
+        tiers:
+          type: object
+          description: 'Peers per published tier; key `"null"` = unreached.'
+          additionalProperties: { type: integer }
+
+    NetworkMapSummary:
+      type: object
+      required: [version, available, stale]
+      properties:
+        version: { type: string }
+        available: { type: boolean }
+        stale: { type: boolean }
+        generated_at: { type: [string, "null"], format: date-time }
+        operator_nodes: { type: object }
+        node_count: { type: integer }
+        edge_count: { type: integer }
+        tier_count: { type: integer }
+        unreached: { type: integer }
+        tiers:
+          type: array
+          items: { $ref: '#/components/schemas/NetworkMapTier' }
+        connectable:
+          type: object
+          additionalProperties: { type: integer }
+        serves_mempool:
+          type: object
+          additionalProperties: { type: integer }
+        auction:
+          type: object
+          additionalProperties: { type: integer }
+
+    Problem:
+      type: object
+      description: |
+        RFC 9457 `application/problem+json`.
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Stable, dereferenceable problem identifier.
+          examples: ["https://api.hypervisor.gg/problems/invalid-filter-value"]
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: Human-readable, specific to this occurrence. Never a stack trace.
+        instance: { type: string, format: uri-reference }
+        parameter:
+          type: string
+          description: The query parameter at fault, when exactly one is.
+        allowed:
+          type: array
+          items: { type: string }
+          description: The permitted values, when the fault is a closed-enum violation.
+        signup_url:
+          type: string
+          format: uri
+          description: Present on `429`. Where to raise this limit.
+
+  responses:
+    BadRequest:
+      description: |
+        A malformed or unsatisfiable request. Types: `invalid-filter-value`
+        (every closed-enum / number / duration violation), `invalid-parameter`,
+        `unknown-parameter`, `filter-unavailable` (the attribute is not
+        collected), `filter-removed`, `chain-not-served`, `cursor-expired`,
+        `invalid-cursor`, `invalid-ip`, and `empty-root-list`
+        (`format=gossip_config` with nothing to emit — an empty
+        `root_node_ips` would stop hl-node from starting).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            invalidEnum:
+              value:
+                type: "https://api.hypervisor.gg/problems/invalid-filter-value"
+                title: "Invalid filter value"
+                status: 400
+                detail: "connectable: 'yess' is not a recognised value"
+                parameter: connectable
+                allowed: ["yes", "no", "unknown"]
+            filterUnavailable:
+              summary: The attribute is not collected — an empty list would have lied
+              value:
+                type: "https://api.hypervisor.gg/problems/filter-unavailable"
+                title: "Filter not available"
+                status: 400
+                detail: "asn is not collected by this producer right now; see /peers/facets"
+                parameter: asn
+            chainNotServed:
+              value:
+                type: "https://api.hypervisor.gg/problems/chain-not-served"
+                title: "Chain not served"
+                status: 400
+                detail: "This deployment serves Mainnet only."
+                parameter: chain
+                allowed: [Mainnet]
+    Unauthorized:
+      description: A key was supplied and is invalid, revoked or expired. Omitting a key is NOT a 401.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            badKey:
+              value:
+                type: "https://api.hypervisor.gg/problems/invalid-api-key"
+                title: "Invalid API key"
+                status: 401
+                detail: "The supplied bearer key is not recognised. Call without a key for anonymous access."
+    NotFound:
+      description: |
+        A well-formed IPv4 that is not in the published peer set.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            unknownPeer:
+              value:
+                type: "https://api.hypervisor.gg/problems/peer-not-found"
+                title: "Peer not found"
+                status: 404
+                detail: "198.51.100.254 is not in the published peer set."
+    TooManyRequests:
+      description: Quota exhausted for this window.
+      headers:
+        Retry-After: { $ref: '#/components/headers/RetryAfter' }
+        RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+        RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+        RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+        RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            anonymousExhausted:
+              summary: The 429 that nudges toward an account
+              value:
+                type: "https://api.hypervisor.gg/problems/rate-limited"
+                title: "Rate limit exceeded"
+                status: 429
+                detail: "Anonymous callers get 20 requests/minute and 2000/day. A free API key raises this to 120/minute and 50000/day."
+                signup_url: "https://hypervisor.gg/docs/peer-api/authentication"
+    Unavailable:
+      description: |
+        The build path raised. Reserved for a genuine producer fault — a graph
+        that merely cannot be built right now is a `200` with `available: false`.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            buildFailed:
+              value:
+                type: "https://api.hypervisor.gg/problems/producer-unavailable"
+                title: "Peer graph unavailable"
+                status: 503
+                detail: "The peer graph producer is not currently able to answer."

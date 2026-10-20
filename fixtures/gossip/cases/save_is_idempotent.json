@@ -1,0 +1,34 @@
+{
+  "name": "save_is_idempotent",
+  "description": "Saving byte-identical content twice writes once. The second call is a no-op: no write, no mtime change, no .bak.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "save",
+      "args": [
+        "$TMPDIR/override_gossip_config.json"
+      ]
+    },
+    {
+      "op": "save",
+      "args": [
+        "$TMPDIR/override_gossip_config.json"
+      ]
+    }
+  ],
+  "expect": {
+    "value": {
+      "written": false,
+      "changed": false
+    },
+    "warnings": []
+  }
+}

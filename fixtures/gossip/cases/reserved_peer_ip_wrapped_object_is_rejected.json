@@ -1,0 +1,29 @@
+{
+  "name": "reserved_peer_ip_wrapped_object_is_rejected",
+  "description": "A {\"Ip\": …} object inside reserved_peer_ips is the classic shape confusion and must be refused, not silently accepted.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false,
+    "reserved_peer_ips": [
+      {
+        "Ip": "198.51.100.20"
+      }
+    ]
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "reserved_peer_ips[0]"
+    }
+  }
+}

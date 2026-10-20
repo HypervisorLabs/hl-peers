@@ -1,0 +1,34 @@
+{
+  "name": "error_429_retry_after_unparseable",
+  "description": "Retry-After that is neither digits nor an HTTP-date is treated as ABSENT: fall back to exponential backoff. Do not guess, do not fail the request.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "X-Mock-Scenario": "rate-limited-bad-retry-after"
+    }
+  },
+  "response": {
+    "status": 429,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "0",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400",
+      "Retry-After": "soon-ish"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/rate-limited",
+      "title": "Rate limit exceeded",
+      "status": 429,
+      "detail": "Window exhausted.",
+      "signup_url": "https://hypervisor.gg/docs/peer-api/authentication"
+    }
+  },
+  "expect": {
+    "retry_after_seconds": null
+  }
+}

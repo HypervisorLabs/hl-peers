@@ -1,0 +1,30 @@
+{
+  "name": "error_400_filter_removed",
+  "description": "`mempool` (the old internal 3-state bucket) stays removed; the server says to use serves_mempool. A BadRequest, not FilterUnavailable.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "mempool": "serving"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/filter-removed",
+      "title": "Filter removed",
+      "status": 400,
+      "detail": "mempool was removed from the public contract; filter on serves_mempool=true|false|null instead",
+      "parameter": "mempool"
+    }
+  }
+}

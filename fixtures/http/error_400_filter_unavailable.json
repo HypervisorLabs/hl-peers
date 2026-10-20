@@ -1,0 +1,30 @@
+{
+  "name": "error_400_filter_unavailable",
+  "description": "The attribute is not collected. An empty list would have lied.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "asn": "AS24940"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/filter-unavailable",
+      "title": "Filter not available",
+      "status": 400,
+      "detail": "asn is not collected by this producer; see /peers/facets",
+      "parameter": "asn"
+    }
+  }
+}

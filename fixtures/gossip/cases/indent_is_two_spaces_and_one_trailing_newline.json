@@ -1,0 +1,22 @@
+{
+  "name": "indent_is_two_spaces_and_one_trailing_newline",
+  "description": "Exactly one trailing \\n, never \\r\\n; 2-space nesting-proportional indent.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false\n}\n",
+    "warnings": []
+  }
+}

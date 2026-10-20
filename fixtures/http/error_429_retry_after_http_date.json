@@ -1,0 +1,37 @@
+{
+  "name": "error_429_retry_after_http_date",
+  "description": "Retry-After as an RFC 9110 IMF-fixdate rather than a delay in seconds. The client parses it against its INJECTABLE clock — inject `clock.now` and assert `expect.retry_after_seconds`, never wall-clock time.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "X-Mock-Scenario": "rate-limited-http-date"
+    }
+  },
+  "response": {
+    "status": 429,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "0",
+      "RateLimit-Reset": "60",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400",
+      "Retry-After": "Mon, 21 Sep 2026 02:36:00 GMT"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/rate-limited",
+      "title": "Rate limit exceeded",
+      "status": 429,
+      "detail": "Window exhausted.",
+      "signup_url": "https://hypervisor.gg/docs/peer-api/authentication"
+    }
+  },
+  "clock": {
+    "now": "2026-09-21T02:35:00Z"
+  },
+  "expect": {
+    "retry_after_seconds": 60
+  }
+}

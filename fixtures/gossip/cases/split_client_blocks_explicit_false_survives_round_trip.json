@@ -1,0 +1,23 @@
+{
+  "name": "split_client_blocks_explicit_false_survives_round_trip",
+  "description": "An explicit false already in the file is PRESERVED — only the setter removes it. Round-tripping must not rewrite an operator's file.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false,
+    "split_client_blocks": false
+  },
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false,\n  \"split_client_blocks\": false\n}\n",
+    "warnings": []
+  }
+}

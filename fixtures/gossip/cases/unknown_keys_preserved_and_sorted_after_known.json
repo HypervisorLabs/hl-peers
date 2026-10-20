@@ -1,0 +1,32 @@
+{
+  "name": "unknown_keys_preserved_and_sorted_after_known",
+  "description": "Unknown keys survive a round trip, are emitted AFTER every known key, and are sorted by code point. Nested object keys sort; array order is preserved.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true,
+    "zzz_future_key": "kept",
+    "aaa_future_key": {
+      "b": 2,
+      "a": 1
+    },
+    "mid_future_list": [
+      3,
+      1,
+      2
+    ]
+  },
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": true,\n  \"aaa_future_key\": {\n    \"a\": 1,\n    \"b\": 2\n  },\n  \"mid_future_list\": [\n    3,\n    1,\n    2\n  ],\n  \"zzz_future_key\": \"kept\"\n}\n",
+    "warnings": []
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "error_400_chain_not_served",
+  "description": "Testnet is refused explicitly rather than answered with Mainnet data — the single most dangerous wrong answer this API could give.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "chain": "Testnet"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/chain-not-served",
+      "title": "Chain not served",
+      "status": 400,
+      "detail": "This deployment serves Mainnet only.",
+      "parameter": "chain",
+      "allowed": [
+        "Mainnet"
+      ]
+    }
+  }
+}

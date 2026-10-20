@@ -1,0 +1,78 @@
+{
+  "name": "peers_state_listening",
+  "description": "state=listening — the peer accepts inbound connections; its other details are unknown. Not `unreachable`, not `responsive`; tier null (not placed), height unknown.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "state": "listening"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-713ca328403568bc\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "stale": false,
+      "chain": "Mainnet",
+      "generated_at": "2026-09-21T02:35:00Z",
+      "next_sweep_at": "2026-09-21T02:40:00Z",
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0",
+      "count": 1,
+      "total": 1,
+      "next_cursor": null,
+      "peers": [
+        {
+          "id": "203.0.113.40",
+          "tier": null,
+          "state": "listening",
+          "role": null,
+          "cc": "FI",
+          "cc_confidence": "medium",
+          "cc_source": "db",
+          "region": null,
+          "asn": "AS64500",
+          "org": "Example Hosting",
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 1,
+          "out_deg": 0,
+          "latest_height": null,
+          "blocks_behind": null,
+          "live": false,
+          "connectable": "unknown",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": null,
+          "version": null,
+          "mempool": {
+            "serves": null,
+            "last_checked": null,
+            "verdict": null,
+            "first_frame_ms": null,
+            "source": null
+          },
+          "auction": {
+            "status": null,
+            "slot": null,
+            "since": null,
+            "last_bid_at": null
+          }
+        }
+      ]
+    }
+  }
+}

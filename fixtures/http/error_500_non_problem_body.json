@@ -1,0 +1,20 @@
+{
+  "name": "error_500_non_problem_body",
+  "description": "A 5xx whose body is NOT problem+json. Exercises the fallback: map on status alone, problem=null, body excerpt <= 512 bytes.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "X-Mock-Scenario": "server-error"
+    }
+  },
+  "response": {
+    "status": 500,
+    "headers": {
+      "Content-Type": "text/plain; charset=utf-8",
+      "API-Version": "1"
+    },
+    "body_text": "Internal Server Error"
+  }
+}

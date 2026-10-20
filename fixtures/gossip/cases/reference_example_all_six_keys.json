@@ -1,0 +1,34 @@
+{
+  "name": "reference_example_all_six_keys",
+  "description": "Every contract field present, in the normative key order. The parsed split_client_blocks:true survives the round trip untouched (§6.2) — only an explicit setter call removes the key.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      },
+      {
+        "Ip": "192.0.2.11"
+      },
+      {
+        "Ip": "198.51.100.7"
+      }
+    ],
+    "try_new_peers": true,
+    "reserved_peer_ips": [
+      "198.51.100.20",
+      "198.51.100.21"
+    ],
+    "n_gossip_peers": 20,
+    "split_client_blocks": true
+  },
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    },\n    {\n      \"Ip\": \"192.0.2.11\"\n    },\n    {\n      \"Ip\": \"198.51.100.7\"\n    }\n  ],\n  \"try_new_peers\": true,\n  \"reserved_peer_ips\": [\n    \"198.51.100.20\",\n    \"198.51.100.21\"\n  ],\n  \"n_gossip_peers\": 20,\n  \"split_client_blocks\": true\n}\n",
+    "warnings": []
+  }
+}

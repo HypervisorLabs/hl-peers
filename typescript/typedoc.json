@@ -1,0 +1,10 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/gossip-fs.ts"],
+  "out": "docs-api",
+  "readme": "README.md",
+  "name": "hl-peers (TypeScript, draft)",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "githubPages": false
+}

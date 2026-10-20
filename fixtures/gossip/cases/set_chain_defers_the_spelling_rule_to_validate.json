@@ -1,0 +1,31 @@
+{
+  "name": "set_chain_defers_the_spelling_rule_to_validate",
+  "description": "Same rule as above for chain: stored as given, refused by validate() (§6.4(5)) — not by the setter.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "set_chain",
+      "args": [
+        "MAINNET"
+      ]
+    },
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "chain",
+      "at_op": 1
+    }
+  }
+}

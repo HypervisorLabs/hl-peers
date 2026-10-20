@@ -1,0 +1,38 @@
+{
+  "name": "peers_unavailable",
+  "description": "available:false — the producer could not build a graph. The empty list is NOT a finding about the network and MUST NOT become an error.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "X-Mock-Scenario": "unavailable"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-d27262c46a04b776\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": false,
+      "stale": false,
+      "chain": "Mainnet",
+      "generated_at": null,
+      "next_sweep_at": null,
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0",
+      "count": 0,
+      "total": 0,
+      "next_cursor": null,
+      "peers": []
+    }
+  }
+}

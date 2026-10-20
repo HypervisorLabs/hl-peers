@@ -1,0 +1,26 @@
+{
+  "name": "new_minimal_live_form",
+  "description": "new() from bare strings stores the {\"Ip\": …} shape. This is byte-for-byte the minimal form a production box actually runs.",
+  "input_config": null,
+  "operations": [
+    {
+      "op": "new",
+      "args": [
+        "Mainnet",
+        [
+          "192.0.2.10"
+        ]
+      ]
+    },
+    {
+      "op": "set_try_new_peers",
+      "args": [
+        false
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false\n}\n",
+    "warnings": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "from_peers_basic",
+  "description": "Build from an API result. Order is the API's ranking; the client never re-sorts.",
+  "input_config": null,
+  "operations": [
+    {
+      "op": "from_peers",
+      "args": [
+        [
+          {
+            "id": "192.0.2.10"
+          },
+          {
+            "id": "192.0.2.11"
+          }
+        ]
+      ],
+      "opts": {
+        "chain": "Mainnet",
+        "try_new_peers": true
+      }
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    },\n    {\n      \"Ip\": \"192.0.2.11\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": []
+  }
+}

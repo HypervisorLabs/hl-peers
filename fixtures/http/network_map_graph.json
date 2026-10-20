@@ -1,0 +1,249 @@
+{
+  "name": "network_map_graph",
+  "description": "/network-map/graph — nodes (same fields as a /peers row), edges {from,to,span}, tier histogram, and (where the producer serves city positions) `cities` + `attribution`; a node's `city` is its cluster id. operator_nodes.count null = the producer publishes its own nodes as ordinary rows.",
+  "request": {
+    "method": "GET",
+    "path": "/network-map/graph",
+    "query": {
+      "max_tier": "2"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-6cd7c782082eee66\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "operator_nodes": {
+        "count": null
+      },
+      "stale": false,
+      "generated_at": "2026-09-21T02:35:00Z",
+      "node_count": 4,
+      "edge_count": 3,
+      "tier_count": 3,
+      "unreached": 0,
+      "tiers": [
+        {
+          "tier": 0,
+          "count": 1
+        },
+        {
+          "tier": 1,
+          "count": 2
+        },
+        {
+          "tier": 2,
+          "count": 1
+        }
+      ],
+      "truncated": false,
+      "nodes": [
+        {
+          "id": "192.0.2.200",
+          "tier": 0,
+          "state": "responsive",
+          "role": "sentry",
+          "cc": "US",
+          "cc_confidence": "low",
+          "cc_source": "db",
+          "region": null,
+          "asn": "AS64500",
+          "org": "Example Hosting",
+          "city": null,
+          "operator": null,
+          "name": "Foundation #13",
+          "in_deg": 0,
+          "out_deg": 8,
+          "latest_height": 812345678,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "no",
+          "labels": [
+            "tier0",
+            "sentry",
+            "sentry:foundation"
+          ],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": null,
+          "mempool": {
+            "serves": null,
+            "last_checked": null,
+            "verdict": null,
+            "first_frame_ms": null,
+            "source": null
+          },
+          "auction": {
+            "status": null,
+            "slot": null,
+            "since": null,
+            "last_bid_at": null
+          }
+        },
+        {
+          "id": "192.0.2.10",
+          "tier": 1,
+          "state": "responsive",
+          "role": "sentry",
+          "cc": "DE",
+          "cc_confidence": "high",
+          "cc_source": "db+rtt-confirmed",
+          "region": null,
+          "asn": "AS64500",
+          "org": "Example Hosting",
+          "city": "DE-frankfurt-am-main",
+          "operator": "Example Operator",
+          "name": "Example Operator",
+          "in_deg": 3,
+          "out_deg": 5,
+          "latest_height": 812345678,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "yes",
+          "labels": [
+            "sentry"
+          ],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": null,
+          "mempool": {
+            "serves": true,
+            "last_checked": "2026-09-21T02:30:00Z",
+            "verdict": "serves",
+            "first_frame_ms": 412,
+            "source": "probe"
+          },
+          "auction": {
+            "status": "holds_slot",
+            "slot": 3,
+            "since": "2026-09-20T11:00:00Z",
+            "last_bid_at": "2026-09-20T10:59:12Z"
+          }
+        },
+        {
+          "id": "198.51.100.7",
+          "tier": 1,
+          "state": "responsive",
+          "role": null,
+          "cc": "SG",
+          "cc_confidence": "high",
+          "cc_source": "cloud-range",
+          "region": null,
+          "asn": "AS64501",
+          "org": "Example Cloud",
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 2,
+          "out_deg": 1,
+          "latest_height": 812345678,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "yes",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": null,
+          "mempool": {
+            "serves": true,
+            "last_checked": "2026-09-21T02:30:00Z",
+            "verdict": "serves",
+            "first_frame_ms": 95,
+            "source": "relay"
+          },
+          "auction": {
+            "status": "bidding",
+            "slot": null,
+            "since": null,
+            "last_bid_at": "2026-09-21T01:10:00Z"
+          }
+        },
+        {
+          "id": "192.0.2.11",
+          "tier": 2,
+          "state": "responsive",
+          "role": null,
+          "cc": "DE",
+          "cc_confidence": "medium",
+          "cc_source": "db",
+          "region": null,
+          "asn": "AS64500",
+          "org": "Example Hosting",
+          "city": "DE-frankfurt-am-main",
+          "operator": null,
+          "name": null,
+          "in_deg": 1,
+          "out_deg": 2,
+          "latest_height": 812345677,
+          "blocks_behind": 1,
+          "live": true,
+          "connectable": "yes",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": null,
+          "mempool": {
+            "serves": false,
+            "last_checked": "2026-09-21T02:30:00Z",
+            "verdict": "connected_no_mempool",
+            "first_frame_ms": null,
+            "source": "probe"
+          },
+          "auction": {
+            "status": "bid_before",
+            "slot": null,
+            "since": null,
+            "last_bid_at": "2026-09-12T08:00:00Z"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "192.0.2.200",
+          "to": "192.0.2.10",
+          "span": 1
+        },
+        {
+          "from": "192.0.2.200",
+          "to": "198.51.100.7",
+          "span": 1
+        },
+        {
+          "from": "192.0.2.10",
+          "to": "192.0.2.11",
+          "span": 1
+        }
+      ],
+      "cities": [
+        {
+          "id": "DE-frankfurt-am-main",
+          "name": "Frankfurt am Main",
+          "cc": "DE",
+          "lat": 50.1,
+          "lon": 8.7,
+          "peers": 2,
+          "tiers": {
+            "1": 1,
+            "2": 1
+          }
+        }
+      ],
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0; IP Geolocation by DB-IP (https://db-ip.com), CC BY 4.0"
+    }
+  }
+}

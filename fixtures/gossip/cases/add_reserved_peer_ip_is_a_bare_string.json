@@ -1,0 +1,25 @@
+{
+  "name": "add_reserved_peer_ip_is_a_bare_string",
+  "description": "🪤 reserved_peer_ips entries are bare strings while root_node_ips entries are {\"Ip\": …} objects. Two shapes, same file.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "add_reserved_peer_ip",
+      "args": [
+        "198.51.100.20"
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false,\n  \"reserved_peer_ips\": [\n    \"198.51.100.20\"\n  ]\n}\n",
+    "warnings": []
+  }
+}

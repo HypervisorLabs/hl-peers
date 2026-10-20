@@ -1,0 +1,81 @@
+{
+  "name": "network_map_summary",
+  "description": "/network-map/summary — the envelope plus zero-filled connectable, serves_mempool and auction counts, without nodes/edges/truncated. The live server also sends `cities` + `attribution` here, which the upstream schema does not list (CLIENT_SPEC §10 D-S).",
+  "request": {
+    "method": "GET",
+    "path": "/network-map/summary",
+    "query": {},
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-1986de4749427722\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "operator_nodes": {
+        "count": null
+      },
+      "stale": false,
+      "generated_at": "2026-09-21T02:35:00Z",
+      "node_count": 4,
+      "edge_count": 3,
+      "tier_count": 3,
+      "unreached": 0,
+      "tiers": [
+        {
+          "tier": 0,
+          "count": 1
+        },
+        {
+          "tier": 1,
+          "count": 2
+        },
+        {
+          "tier": 2,
+          "count": 1
+        }
+      ],
+      "connectable": {
+        "yes": 3,
+        "no": 1,
+        "unknown": 0
+      },
+      "serves_mempool": {
+        "true": 2,
+        "false": 1,
+        "null": 1
+      },
+      "auction": {
+        "holds_slot": 1,
+        "bidding": 1,
+        "bid_before": 1,
+        "null": 1
+      },
+      "cities": [
+        {
+          "id": "DE-frankfurt-am-main",
+          "name": "Frankfurt am Main",
+          "cc": "DE",
+          "lat": 50.1,
+          "lon": 8.7,
+          "peers": 2,
+          "tiers": {
+            "1": 1,
+            "2": 1
+          }
+        }
+      ],
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0; IP Geolocation by DB-IP (https://db-ip.com), CC BY 4.0"
+    }
+  }
+}

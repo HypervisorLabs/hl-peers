@@ -1,0 +1,31 @@
+{
+  "name": "merge_peers_empty_result_is_refused",
+  "description": "🔴 The filter matched nothing. Writing this would empty root_node_ips and crash-loop the node. Refuse; never fall back to the previous roots silently.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        []
+      ],
+      "opts": {
+        "mode": "replace"
+      }
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips",
+      "reason_contains": "empty root_node_ips"
+    }
+  }
+}

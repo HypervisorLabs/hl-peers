@@ -1,0 +1,23 @@
+{
+  "name": "validate_warns_when_chain_absent",
+  "description": "The library cannot tell which chain the node runs, and a disagreement stops the node from starting.",
+  "input_config": {
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "value": "ok",
+    "warnings": [
+      "chain_absent"
+    ]
+  }
+}

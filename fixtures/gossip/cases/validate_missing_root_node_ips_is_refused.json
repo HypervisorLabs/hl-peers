@@ -1,0 +1,19 @@
+{
+  "name": "validate_missing_root_node_ips_is_refused",
+  "description": "Absent is the same failure as empty.",
+  "input_config": {
+    "chain": "Mainnet",
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips"
+    }
+  }
+}

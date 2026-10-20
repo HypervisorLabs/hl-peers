@@ -1,0 +1,26 @@
+{
+  "name": "both_entry_shapes_round_trip_together",
+  "description": "The file carries both shapes at once and neither leaks into the other.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false,
+    "reserved_peer_ips": [
+      "198.51.100.20",
+      "198.51.100.21"
+    ]
+  },
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false,\n  \"reserved_peer_ips\": [\n    \"198.51.100.20\",\n    \"198.51.100.21\"\n  ]\n}\n",
+    "warnings": []
+  }
+}

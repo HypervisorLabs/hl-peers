@@ -1,0 +1,30 @@
+{
+  "name": "error_400_cursor_expired",
+  "description": "A cursor is bound to its graph generation. Clients MUST NOT auto-restart the walk — that would mix two generations.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "cursor": "cursor-from-a-previous-sweep"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/cursor-expired",
+      "title": "Cursor expired",
+      "status": 400,
+      "detail": "This cursor was issued in an earlier graph generation.",
+      "parameter": "cursor"
+    }
+  }
+}

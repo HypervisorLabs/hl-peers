@@ -1,0 +1,11 @@
+# CLIENT_SPEC.md §5.1 requires the parsed rate-limit block on EVERY error, and
+# the problem body where there was one. That makes `Error` wider than clippy's
+# 128-byte default for `result_large_err` / `large_enum_variant`. The problem
+# body is already boxed; the rate-limit block is five small Options that callers
+# read directly, and boxing it would trade an allocation on every error path for
+# stack bytes on a path that is not hot. `api_version` was added to every
+# response-carrying variant and `reset_at` to `RateLimited`, hence 320. Raise
+# the thresholds deliberately
+# rather than sprinkling `allow`s.
+large-error-threshold = 320
+enum-variant-size-threshold = 320

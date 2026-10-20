@@ -1,0 +1,16 @@
+{
+  "name": "parse_root_node_ips_not_an_array_is_refused",
+  "description": "Type mismatch on a known key.",
+  "input_json_text": "{\"chain\": \"Mainnet\", \"root_node_ips\": \"192.0.2.10\"}",
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips"
+    }
+  }
+}

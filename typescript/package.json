@@ -1,0 +1,80 @@
+{
+  "name": "hl-peers",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Client for the Hyperliquid Peer API, and an offline override_gossip_config.json file algebra.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HypervisorLabs/hl-peers.git",
+    "directory": "typescript"
+  },
+  "homepage": "https://github.com/HypervisorLabs/hl-peers/tree/main/typescript",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    },
+    "./gossip-fs": {
+      "import": {
+        "types": "./dist/esm/gossip-fs.d.ts",
+        "default": "./dist/esm/gossip-fs.js"
+      },
+      "require": {
+        "types": "./dist/cjs/gossip-fs.d.ts",
+        "default": "./dist/cjs/gossip-fs.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "gossip-fs": [
+        "./dist/cjs/gossip-fs.d.ts"
+      ]
+    }
+  },
+  "bin": {
+    "hl-peers": "./dist/esm/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:pkgjson",
+    "build:esm": "tsc -p tsconfig.build.json --outDir dist/esm --module nodenext --moduleResolution nodenext",
+    "build:cjs": "tsc -p tsconfig.build.json --outDir dist/cjs --module commonjs --moduleResolution node10 --verbatimModuleSyntax false",
+    "build:pkgjson": "node scripts/write-dist-pkgjson.mjs",
+    "prepare": "npm run build",
+    "lint": "eslint .",
+    "test": "node --test --test-reporter=spec \"test/*.test.ts\"",
+    "docs:api": "typedoc",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.2",
+    "eslint": "^10.11.0",
+    "typedoc": "^0.28.20",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}

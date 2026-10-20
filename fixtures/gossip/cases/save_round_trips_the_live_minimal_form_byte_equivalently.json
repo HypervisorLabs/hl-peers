@@ -1,0 +1,32 @@
+{
+  "name": "save_round_trips_the_live_minimal_form_byte_equivalently",
+  "description": "Conformance checklist item: the live minimal form survives load -> save.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "save",
+      "args": [
+        "$TMPDIR/override_gossip_config.json"
+      ]
+    }
+  ],
+  "expect": {
+    "value": {
+      "written": true,
+      "changed": true
+    },
+    "warnings": [],
+    "file_after": {
+      "path": "$TMPDIR/override_gossip_config.json",
+      "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false\n}\n"
+    }
+  }
+}

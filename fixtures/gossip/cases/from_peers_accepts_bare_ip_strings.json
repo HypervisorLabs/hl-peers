@@ -1,0 +1,23 @@
+{
+  "name": "from_peers_accepts_bare_ip_strings",
+  "description": "Bare strings are accepted on input alongside peer objects.",
+  "input_config": null,
+  "operations": [
+    {
+      "op": "from_peers",
+      "args": [
+        [
+          "192.0.2.10"
+        ]
+      ],
+      "opts": {
+        "chain": "Mainnet",
+        "try_new_peers": false
+      }
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false\n}\n",
+    "warnings": []
+  }
+}

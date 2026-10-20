@@ -1,0 +1,96 @@
+{
+  "name": "validate_warns_above_24_roots",
+  "description": "Warning, never fatal: a long root list starts the node slower. try_new_peers is true here so this case isolates the ONE warning under test.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "203.0.113.1"
+      },
+      {
+        "Ip": "203.0.113.2"
+      },
+      {
+        "Ip": "203.0.113.3"
+      },
+      {
+        "Ip": "203.0.113.4"
+      },
+      {
+        "Ip": "203.0.113.5"
+      },
+      {
+        "Ip": "203.0.113.6"
+      },
+      {
+        "Ip": "203.0.113.7"
+      },
+      {
+        "Ip": "203.0.113.8"
+      },
+      {
+        "Ip": "203.0.113.9"
+      },
+      {
+        "Ip": "203.0.113.10"
+      },
+      {
+        "Ip": "203.0.113.11"
+      },
+      {
+        "Ip": "203.0.113.12"
+      },
+      {
+        "Ip": "203.0.113.13"
+      },
+      {
+        "Ip": "203.0.113.14"
+      },
+      {
+        "Ip": "203.0.113.15"
+      },
+      {
+        "Ip": "203.0.113.16"
+      },
+      {
+        "Ip": "203.0.113.17"
+      },
+      {
+        "Ip": "203.0.113.18"
+      },
+      {
+        "Ip": "203.0.113.19"
+      },
+      {
+        "Ip": "203.0.113.20"
+      },
+      {
+        "Ip": "203.0.113.21"
+      },
+      {
+        "Ip": "203.0.113.22"
+      },
+      {
+        "Ip": "203.0.113.23"
+      },
+      {
+        "Ip": "203.0.113.24"
+      },
+      {
+        "Ip": "203.0.113.25"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "value": "ok",
+    "warnings": [
+      "many_roots_gt_24"
+    ]
+  }
+}

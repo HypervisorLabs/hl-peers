@@ -1,0 +1,16 @@
+{
+  "name": "parse_non_object_top_level_is_refused",
+  "description": "A JSON array is not a config.",
+  "input_json_text": "[\"192.0.2.10\"]",
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "$"
+    }
+  }
+}
