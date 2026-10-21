@@ -1,0 +1,119 @@
+{
+  "name": "peers_auction_holds_slot_or_bidding",
+  "description": "auction=holds_slot,bidding — the on-chain gossip read-priority auction. slot/since are set only for holds_slot.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "auction": "holds_slot,bidding"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-f226a6dbb1c67d40\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "stale": false,
+      "chain": "Mainnet",
+      "generated_at": "2026-09-21T02:35:00Z",
+      "next_sweep_at": "2026-09-21T02:40:00Z",
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0",
+      "count": 2,
+      "total": 2,
+      "next_cursor": null,
+      "peers": [
+        {
+          "id": "192.0.2.10",
+          "tier": 1,
+          "state": "responsive",
+          "role": "sentry",
+          "cc": "DE",
+          "cc_confidence": "high",
+          "cc_source": "db+rtt-confirmed",
+          "region": null,
+          "asn": "AS64500",
+          "org": "Example Hosting",
+          "city": null,
+          "operator": "Example Operator",
+          "name": "Example Operator",
+          "in_deg": 3,
+          "out_deg": 5,
+          "latest_height": 812345678,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "yes",
+          "labels": [
+            "sentry"
+          ],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": null,
+          "mempool": {
+            "serves": true,
+            "last_checked": "2026-09-21T02:30:00Z",
+            "verdict": "serves",
+            "first_frame_ms": 412,
+            "source": "probe"
+          },
+          "auction": {
+            "status": "holds_slot",
+            "slot": 3,
+            "since": "2026-09-20T11:00:00Z",
+            "last_bid_at": "2026-09-20T10:59:12Z"
+          }
+        },
+        {
+          "id": "198.51.100.7",
+          "tier": 1,
+          "state": "responsive",
+          "role": null,
+          "cc": "SG",
+          "cc_confidence": "high",
+          "cc_source": "cloud-range",
+          "region": null,
+          "asn": "AS64501",
+          "org": "Example Cloud",
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 2,
+          "out_deg": 1,
+          "latest_height": 812345678,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "yes",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": null,
+          "mempool": {
+            "serves": true,
+            "last_checked": "2026-09-21T02:30:00Z",
+            "verdict": "serves",
+            "first_frame_ms": 95,
+            "source": "relay"
+          },
+          "auction": {
+            "status": "bidding",
+            "slot": null,
+            "since": null,
+            "last_bid_at": "2026-09-21T01:10:00Z"
+          }
+        }
+      ]
+    }
+  }
+}

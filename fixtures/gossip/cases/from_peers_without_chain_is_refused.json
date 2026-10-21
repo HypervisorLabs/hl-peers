@@ -1,0 +1,22 @@
+{
+  "name": "from_peers_without_chain_is_refused",
+  "description": "Never default the chain to Mainnet: a chain that disagrees with the node's --chain stops the node from starting, and guessing is how that happens.",
+  "input_config": null,
+  "operations": [
+    {
+      "op": "from_peers",
+      "args": [
+        [
+          "192.0.2.10"
+        ]
+      ]
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "chain",
+      "at_op": 0
+    }
+  }
+}

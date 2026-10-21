@@ -1,0 +1,23 @@
+{
+  "name": "empty_array_renders_inline",
+  "description": "An empty array is `[]` on one line, not expanded.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false,
+    "reserved_peer_ips": []
+  },
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false,\n  \"reserved_peer_ips\": []\n}\n",
+    "warnings": []
+  }
+}

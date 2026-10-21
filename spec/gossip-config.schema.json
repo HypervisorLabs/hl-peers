@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/gossip-config.schema.json",
+  "title": "hl-node override_gossip_config.json",
+  "description": "The hl-node gossip override file, as written to the node user's home directory ($HOME/override_gossip_config.json). 🔴 The node reads this file at start; writing it does not change a running node — the change applies at the node's next start. 🔴 An empty or missing root_node_ips stops the node from starting: there is no built-in fallback. Unknown keys MUST be preserved by clients round-tripping this file, so additionalProperties is true.",
+  "type": "object",
+  "required": ["root_node_ips"],
+  "additionalProperties": true,
+  "properties": {
+    "chain": {
+      "description": "The chain this node runs. Exactly these two spellings. Must match the chain the node itself is started with; a mismatch stops the node from starting.",
+      "type": "string",
+      "enum": ["Mainnet", "Testnet"]
+    },
+    "root_node_ips": {
+      "description": "The peers the node connects to first, in the order the generator ranked them. 🔴 MUST be non-empty: the node cannot start with an empty list. Shorter lists start faster; a long list buys nothing.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/RootNodeEntry" }
+    },
+    "try_new_peers": {
+      "description": "Whether the node may discover peers beyond root_node_ips. Whether false together with a multi-entry root list restricts the node to exactly that list is not established.",
+      "type": "boolean"
+    },
+    "reserved_peer_ips": {
+      "description": "Peers the node always admits as inbound peers. 🪤 Entries are BARE STRINGS here, unlike root_node_ips, whose entries are {\"Ip\": \"…\"} objects. The two arrays in the same file use two different entry shapes; encode and decode them separately.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/Ipv4" }
+    },
+    "n_gossip_peers": {
+      "description": "The node's inbound gossip peer limit. Default 8, valid range [8, 100].",
+      "type": "integer",
+      "minimum": 8,
+      "maximum": 100
+    },
+    "split_client_blocks": {
+      "description": "An optional node flag. The key is OMITTED when false rather than written as false; a client SHOULD do the same when it owns the value, and MUST preserve an explicit false that was already present in a file it is round-tripping.",
+      "type": "boolean"
+    }
+  },
+  "$defs": {
+    "Ipv4": {
+      "description": "A dotted-quad IPv4 literal. IPv6 is out of contract: whether hl-node accepts an IPv6 literal in this file is unverified, so clients MUST reject IPv6 with an explicit error rather than write an untested value into a file that controls whether the node starts.",
+      "type": "string",
+      "format": "ipv4",
+      "pattern": "^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$"
+    },
+    "RootNodeEntry": {
+      "description": "🪤 An object with a single key `Ip` — capital I, lowercase p. The spelling is load-bearing. It is NOT a bare string, NOT `ip`, and it carries NO port field.",
+      "type": "object",
+      "required": ["Ip"],
+      "additionalProperties": false,
+      "properties": {
+        "Ip": { "$ref": "#/$defs/Ipv4" }
+      }
+    }
+  },
+  "examples": [
+    {
+      "chain": "Mainnet",
+      "root_node_ips": [{ "Ip": "192.0.2.10" }],
+      "try_new_peers": false
+    },
+    {
+      "chain": "Mainnet",
+      "root_node_ips": [
+        { "Ip": "192.0.2.10" },
+        { "Ip": "192.0.2.11" },
+        { "Ip": "198.51.100.7" }
+      ],
+      "try_new_peers": true,
+      "reserved_peer_ips": ["198.51.100.20", "198.51.100.21"],
+      "n_gossip_peers": 20
+    }
+  ]
+}

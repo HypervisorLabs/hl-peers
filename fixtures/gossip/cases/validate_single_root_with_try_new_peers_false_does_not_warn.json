@@ -1,0 +1,22 @@
+{
+  "name": "validate_single_root_with_try_new_peers_false_does_not_warn",
+  "description": "The known pinning case is clean: no warnings at all.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "value": "ok",
+    "warnings": []
+  }
+}

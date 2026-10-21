@@ -1,0 +1,35 @@
+{
+  "name": "error_400_invalid_enum",
+  "description": "An unrecognised closed-enum member is a 400, never a silent drop.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "connectable": "yess"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/invalid-filter-value",
+      "title": "Invalid filter value",
+      "status": 400,
+      "detail": "connectable: 'yess' is not a recognised value",
+      "parameter": "connectable",
+      "allowed": [
+        "yes",
+        "no",
+        "unknown"
+      ]
+    }
+  }
+}

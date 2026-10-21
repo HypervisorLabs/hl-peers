@@ -1,0 +1,34 @@
+{
+  "name": "error_429_rate_limited",
+  "description": "Quota exhausted. Every RateLimit-* header plus Retry-After is present on the 429 itself. 🪤 The figures in `detail` are PROSE and disagree with the plan's tier table — never parse them.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "X-Mock-Scenario": "rate-limited"
+    }
+  },
+  "response": {
+    "status": 429,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "0",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400",
+      "Retry-After": "42"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/rate-limited",
+      "title": "Rate limit exceeded",
+      "status": 429,
+      "detail": "Anonymous callers get 20 requests/minute and 2000/day. A free API key raises this to 120/minute and 50000/day.",
+      "signup_url": "https://hypervisor.gg/docs/peer-api/authentication"
+    }
+  },
+  "expect": {
+    "retry_after_seconds": 42
+  }
+}

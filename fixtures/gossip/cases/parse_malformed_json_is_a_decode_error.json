@@ -1,0 +1,15 @@
+{
+  "name": "parse_malformed_json_is_a_decode_error",
+  "description": "Not JSON at all.",
+  "input_json_text": "{\"chain\": \"Mainnet\", \"root_node_ips\": [",
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Decode"
+    }
+  }
+}

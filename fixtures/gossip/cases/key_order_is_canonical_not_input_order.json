@@ -1,0 +1,14 @@
+{
+  "name": "key_order_is_canonical_not_input_order",
+  "description": "Input key order is discarded; output order is fixed (§6.3(1)) so four languages emit identical bytes.",
+  "input_json_text": "{\"try_new_peers\": false, \"root_node_ips\": [{\"Ip\": \"192.0.2.10\"}], \"chain\": \"Mainnet\"}",
+  "operations": [
+    {
+      "op": "to_json"
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false\n}\n",
+    "warnings": []
+  }
+}

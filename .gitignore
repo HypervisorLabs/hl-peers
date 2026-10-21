@@ -1,0 +1,42 @@
+# --- secrets: never commit an API key or a real config ---
+.env
+.env.*
+*.pem
+override_gossip_config.json
+override_gossip_config.json.*.bak
+
+# --- editors / OS ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# --- elixir ---
+elixir/_build/
+elixir/deps/
+elixir/cover/
+elixir/doc/
+erl_crash.dump
+*.ez
+
+# --- typescript ---
+node_modules/
+typescript/dist/
+typescript/coverage/
+*.tsbuildinfo
+
+# --- rust ---
+rust/target/
+**/*.rs.bk
+
+# --- python ---
+__pycache__/
+*.py[cod]
+python/.venv/
+python/build/
+python/dist/
+python/*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage

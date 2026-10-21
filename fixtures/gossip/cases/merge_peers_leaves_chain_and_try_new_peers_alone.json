@@ -1,0 +1,32 @@
+{
+  "name": "merge_peers_leaves_chain_and_try_new_peers_alone",
+  "description": "🔴 §6.5(9): a merge touches root_node_ips and nothing else. The opts bag is shared with from_peers, so chain/try_new_peers are ACCEPTED here and deliberately not applied — silently rewriting the chain of a file an operator already has can stop the node from starting.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1"
+        ]
+      ],
+      "opts": {
+        "mode": "replace",
+        "chain": "Testnet",
+        "try_new_peers": false
+      }
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"203.0.113.1\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": []
+  }
+}

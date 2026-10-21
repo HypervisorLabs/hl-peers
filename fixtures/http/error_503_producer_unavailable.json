@@ -1,0 +1,29 @@
+{
+  "name": "error_503_producer_unavailable",
+  "description": "503 is reserved for the build path actually raising. A graph that merely cannot be built is a 200 with available:false.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "X-Mock-Scenario": "producer-unavailable"
+    }
+  },
+  "response": {
+    "status": 503,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/producer-unavailable",
+      "title": "Peer graph unavailable",
+      "status": 503,
+      "detail": "The peer graph producer is not currently able to answer."
+    }
+  }
+}

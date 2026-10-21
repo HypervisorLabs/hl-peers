@@ -1,0 +1,34 @@
+{
+  "name": "save_refuses_to_write_an_invalid_config",
+  "description": "validate runs FIRST; nothing reaches the filesystem.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "set_root_ips",
+      "args": [
+        []
+      ]
+    },
+    {
+      "op": "save",
+      "args": [
+        "$TMPDIR/override_gossip_config.json"
+      ]
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips"
+    },
+    "file_absent": "$TMPDIR/override_gossip_config.json"
+  }
+}

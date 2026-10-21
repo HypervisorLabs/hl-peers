@@ -1,0 +1,255 @@
+name: CI
+
+# 🔴 Every command below is one a maintainer runs locally. If you change a gate
+# here, change it in the language's README too — a CI that tests something other
+# than what the contributor runs is worse than no CI.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------
+  # Always runs. Everything else depends on it: if the contract is broken
+  # there is no point testing four clients against it.
+  # ---------------------------------------------------------------------
+  contract:
+    name: spec + fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+
+      - name: Install jsonschema
+        run: pip install --quiet jsonschema pyyaml
+
+      - name: Lint the OpenAPI copy
+        run: npx --yes @redocly/cli@latest lint spec/peer-api-v1.openapi.yaml
+
+      - name: The OpenAPI copy carries no producer hostname or internal path
+        run: |
+          if grep -nEi 'hlnode|/proc/|docs/plans/|docs/api/' spec/peer-api-v1.openapi.yaml; then
+            echo "::error::spec/peer-api-v1.openapi.yaml leaks internal detail - see spec/SOURCE.md"
+            exit 1
+          fi
+
+      - name: Fixtures are byte-exact, schema-valid and RFC 5737 only
+        run: python3 tools/check_fixtures.py
+
+      - name: Spec field list is current
+        run: python3 tools/gen_spec_fields.py --check
+
+      - name: Fixtures are in sync with the generator
+        run: |
+          python3 tools/gen_fixtures.py
+          git diff --exit-code -- fixtures/ \
+            || { echo "::error::fixtures/ is stale - run tools/gen_fixtures.py"; exit 1; }
+
+      - name: The mock server starts and serves every fixture
+        run: |
+          python3 tools/mock_server.py --port 8931 &
+          for i in $(seq 1 40); do
+            curl -sf -o /dev/null "http://127.0.0.1:8931/peers" && break
+            sleep 0.25
+          done
+          python3 - <<'PY'
+          import json, os, subprocess, sys, urllib.parse
+          bad = []
+          for n in sorted(os.listdir("fixtures/http")):
+              fx = json.load(open("fixtures/http/" + n, encoding="utf-8"))
+              rq = fx["request"]
+              url = "http://127.0.0.1:8931" + rq["path"]
+              if rq["query"]:
+                  url += "?" + urllib.parse.urlencode(rq["query"])
+              cmd = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url]
+              for k, v in rq["headers"].items():
+                  cmd += ["-H", "%s: %s" % (k, v)]
+              got = subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
+              if got != str(fx["response"]["status"]):
+                  bad.append((fx["name"], fx["response"]["status"], got))
+          print("checked", len(os.listdir("fixtures/http")), "fixtures")
+          if bad:
+              for b in bad:
+                  print("FAIL", *b)
+              sys.exit(1)
+          PY
+
+  # ---------------------------------------------------------------------
+  # One job per language. Each runs only when that language's build file
+  # is present. Every command here is the same gate set run locally.
+  # ---------------------------------------------------------------------
+  elixir:
+    name: elixir
+    needs: contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: present
+        run: |
+          test -f elixir/mix.exs && echo "go=true" >> "$GITHUB_OUTPUT" \
+            || echo "go=false" >> "$GITHUB_OUTPUT"
+      - uses: erlef/setup-beam@v1
+        if: steps.present.outputs.go == 'true'
+        with: { otp-version: "27", elixir-version: "1.18" }
+      - uses: actions/setup-python@v5
+        if: steps.present.outputs.go == 'true'
+        with: { python-version: "3.12" }
+      # The dialyzer PLT costs minutes to build and changes only with the deps.
+      - uses: actions/cache@v4
+        if: steps.present.outputs.go == 'true'
+        with:
+          path: elixir/_build/plts
+          key: plt-${{ runner.os }}-${{ hashFiles('elixir/mix.lock') }}
+      - if: steps.present.outputs.go == 'true'
+        working-directory: elixir
+        run: |
+          mix local.hex --force && mix local.rebar --force
+          mix deps.get
+          mix format --check-formatted
+          mix compile --force --warnings-as-errors
+          mix credo --strict
+          mix dialyzer
+          mix docs
+          MIX_ENV=test mix test --include integration
+
+  typescript:
+    name: typescript
+    needs: contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: present
+        run: |
+          test -f typescript/package.json && echo "go=true" >> "$GITHUB_OUTPUT" \
+            || echo "go=false" >> "$GITHUB_OUTPUT"
+      # Node 22+: the test suite and the cross-check harness are .ts files run
+      # directly, which needs native type stripping.
+      - uses: actions/setup-node@v4
+        if: steps.present.outputs.go == 'true'
+        with: { node-version: "22" }
+      - uses: actions/setup-python@v5
+        if: steps.present.outputs.go == 'true'
+        with: { python-version: "3.12" }
+      - if: steps.present.outputs.go == 'true'
+        working-directory: typescript
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npx eslint .
+          npm test
+          npm run build
+          npm pack --dry-run
+          npx --yes publint@latest
+          npx --yes @arethetypeswrong/cli@latest --pack .
+
+  rust:
+    name: rust
+    needs: contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: present
+        run: |
+          test -f rust/Cargo.toml && echo "go=true" >> "$GITHUB_OUTPUT" \
+            || echo "go=false" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.present.outputs.go == 'true'
+        with: { components: "rustfmt, clippy" }
+      - uses: actions/setup-python@v5
+        if: steps.present.outputs.go == 'true'
+        with: { python-version: "3.12" }
+      - if: steps.present.outputs.go == 'true'
+        working-directory: rust
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-features --all-targets -- -D warnings
+          # GossipConfig must build and lint as a pure offline editor.
+          cargo clippy --no-default-features --all-targets -- -D warnings
+          cargo test --all-features --features mock-server-tests
+          cargo doc --all-features --no-deps
+          cargo package --list --allow-dirty
+
+  python:
+    name: python (${{ matrix.python }})
+    needs: contract
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor and the current release; the package claims >= 3.9.
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - id: present
+        run: |
+          test -f python/pyproject.toml && echo "go=true" >> "$GITHUB_OUTPUT" \
+            || echo "go=false" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        if: steps.present.outputs.go == 'true'
+        with: { python-version: "${{ matrix.python }}" }
+      - if: steps.present.outputs.go == 'true'
+        working-directory: python
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+          ruff check .
+          ruff format --check .
+          mypy --strict src
+          pytest -q
+      - name: build + twine check (no upload, ever)
+        if: steps.present.outputs.go == 'true' && matrix.python == '3.12'
+        working-directory: python
+        run: |
+          python -m build
+          twine check dist/*
+
+  # ---------------------------------------------------------------------
+  # 🔴 The differential test: the same inputs through all four
+  # clients, asserting byte-identical output. It needs every toolchain, so
+  # it runs last and only when all four clients are present.
+  # ---------------------------------------------------------------------
+  cross_check:
+    name: cross-client differential
+    needs: [contract, elixir, typescript, rust, python]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: present
+        run: |
+          if test -f elixir/mix.exs && test -f typescript/package.json \
+             && test -f rust/Cargo.toml && test -f python/pyproject.toml; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.present.outputs.go == 'true'
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        if: steps.present.outputs.go == 'true'
+        with: { node-version: "22" }
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.present.outputs.go == 'true'
+      - uses: erlef/setup-beam@v1
+        if: steps.present.outputs.go == 'true'
+        with: { otp-version: "27", elixir-version: "1.18" }
+      - if: steps.present.outputs.go == 'true'
+        run: |
+          python3 -m venv python/.venv
+          python/.venv/bin/pip install --quiet -e "python/[dev]"
+          (cd typescript && npm ci)
+          (cd rust && cargo build --features blocking --bin cross-check)
+          (cd elixir && mix local.hex --force && mix local.rebar --force && mix deps.get && mix compile)
+          python3 tools/cross_check/run.py

@@ -1,0 +1,36 @@
+{
+  "name": "merge_peers_invalid_candidate_names_the_input_index",
+  "description": "🪤 An invalid merge candidate is reported as peers[<n>] — the index in what the CALLER passed, not a position in a config the value never reached. Four clients spelled this three different ways until it was pinned here.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1",
+          "not-an-ip",
+          "203.0.113.2"
+        ]
+      ],
+      "opts": {
+        "mode": "replace"
+      }
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "peers[1]",
+      "at_op": 0,
+      "reason_contains": "not an IPv4"
+    }
+  }
+}

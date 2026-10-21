@@ -1,0 +1,44 @@
+{
+  "name": "peers_format_gossip_config",
+  "description": "format=gossip_config — the drop-in override file. Note the capital `Ip`.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "cc": "DE",
+      "format": "gossip_config"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json; profile=\"gossip-config\"",
+      "ETag": "\"sha256-4fa9d9042adc20d8\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "root_node_ips": [
+        {
+          "Ip": "192.0.2.10"
+        },
+        {
+          "Ip": "192.0.2.11"
+        },
+        {
+          "Ip": "198.51.100.7"
+        }
+      ],
+      "try_new_peers": true,
+      "chain": "Mainnet"
+    }
+  },
+  "expect": {
+    "gossip_config_json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    },\n    {\n      \"Ip\": \"192.0.2.11\"\n    },\n    {\n      \"Ip\": \"198.51.100.7\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n"
+  }
+}

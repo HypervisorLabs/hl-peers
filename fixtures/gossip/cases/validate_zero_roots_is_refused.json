@@ -1,0 +1,21 @@
+{
+  "name": "validate_zero_roots_is_refused",
+  "description": "🔴 The single most important guard in the library.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips",
+      "reason_contains": "empty root_node_ips"
+    }
+  }
+}

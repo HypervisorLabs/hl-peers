@@ -1,0 +1,25 @@
+{
+  "name": "peers_304_not_modified",
+  "description": "If-None-Match matched. No body. Costs no quota unit, which is why conditional polling is the behaviour to subsidise.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "If-None-Match": "\"sha256-71f03b5d9e1ba6c6\""
+    }
+  },
+  "response": {
+    "status": 304,
+    "headers": {
+      "ETag": "\"sha256-71f03b5d9e1ba6c6\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": null
+  }
+}

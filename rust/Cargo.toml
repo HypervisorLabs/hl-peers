@@ -1,0 +1,70 @@
+[package]
+name = "hl-peers"
+version = "1.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Client for the Hyperliquid Peer API, and an offline editor for hl-node's override_gossip_config.json"
+license = "MIT"
+repository = "https://github.com/HypervisorLabs/hl-peers"
+homepage = "https://github.com/HypervisorLabs/hl-peers"
+publish = false
+readme = "README.md"
+keywords = ["hyperliquid", "hl-node", "gossip", "peers"]
+categories = ["api-bindings"]
+# The conformance suites live at ../fixtures, outside the package root, so they
+# cannot travel in the .crate. Excluding them keeps `cargo package --list` sane
+# and stops a packaged copy shipping tests that can never run.
+exclude = ["tests/**", "fixtures/**", "cross_check/**"]
+
+[features]
+default = ["client"]
+# The async HTTP query surface. Turn it off (`default-features = false`) and the
+# crate is a pure, offline `GossipConfig` editor with no HTTP dependency at all.
+client = ["dep:reqwest", "dep:tokio", "dep:futures-core"]
+# A synchronous facade over the async client, for scripts and the CLI.
+blocking = ["client", "tokio/rt"]
+# The `hl-peers` binary.
+cli = ["client", "blocking", "dep:clap"]
+# Opt in to the integration test that spawns tools/mock_server.py.
+mock-server-tests = []
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+reqwest = { version = "0.12", optional = true, default-features = false, features = [
+  "rustls-tls",
+  "http2",
+  "charset",
+] }
+tokio = { version = "1", optional = true, default-features = false, features = [
+  "time",
+] }
+futures-core = { version = "0.3", optional = true, default-features = false, features = [
+  "std",
+] }
+clap = { version = "4", optional = true, features = ["derive"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "time"] }
+
+[[bin]]
+name = "hl-peers"
+path = "src/bin/hl-peers.rs"
+required-features = ["cli"]
+
+[[bin]]
+name = "cross-check"
+path = "cross_check/main.rs"
+required-features = ["blocking"]
+
+[[example]]
+name = "quickstart"
+required-features = ["client"]
+
+[[example]]
+name = "gossip_offline"
+
+[package.metadata.docs.rs]
+all-features = true

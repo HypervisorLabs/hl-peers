@@ -1,0 +1,29 @@
+{
+  "name": "set_root_ips_replaces_and_dedupes_first_wins",
+  "description": "Wholesale replace, given order preserved, first occurrence wins.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "set_root_ips",
+      "args": [
+        [
+          "198.51.100.7",
+          "192.0.2.10",
+          "198.51.100.7"
+        ]
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"198.51.100.7\"\n    },\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": []
+  }
+}

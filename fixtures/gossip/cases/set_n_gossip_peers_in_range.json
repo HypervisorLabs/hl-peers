@@ -1,0 +1,25 @@
+{
+  "name": "set_n_gossip_peers_in_range",
+  "description": "20 is inside [8,100].",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "set_n_gossip_peers",
+      "args": [
+        20
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false,\n  \"n_gossip_peers\": 20\n}\n",
+    "warnings": []
+  }
+}

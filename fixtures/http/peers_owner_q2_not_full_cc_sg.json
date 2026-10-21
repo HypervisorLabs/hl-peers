@@ -1,0 +1,79 @@
+{
+  "name": "peers_owner_q2_not_full_cc_sg",
+  "description": "Example query 2 — 'not full'. accepting=true is exactly connectable=yes, an ESTIMATE, not a guarantee. Single page; see peers_page_1_of_3 for a cursor walk.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "accepting": "true",
+      "cc": "SG"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-95faa2c598a21860\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "stale": false,
+      "chain": "Mainnet",
+      "generated_at": "2026-09-21T02:35:00Z",
+      "next_sweep_at": "2026-09-21T02:40:00Z",
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0",
+      "count": 1,
+      "total": 1,
+      "next_cursor": null,
+      "peers": [
+        {
+          "id": "198.51.100.7",
+          "tier": 1,
+          "state": "responsive",
+          "role": null,
+          "cc": "SG",
+          "cc_confidence": "high",
+          "cc_source": "cloud-range",
+          "region": null,
+          "asn": "AS64501",
+          "org": "Example Cloud",
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 2,
+          "out_deg": 1,
+          "latest_height": 812345678,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "yes",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": null,
+          "mempool": {
+            "serves": true,
+            "last_checked": "2026-09-21T02:30:00Z",
+            "verdict": "serves",
+            "first_frame_ms": 95,
+            "source": "relay"
+          },
+          "auction": {
+            "status": "bidding",
+            "slot": null,
+            "since": null,
+            "last_bid_at": "2026-09-21T01:10:00Z"
+          }
+        }
+      ]
+    }
+  }
+}

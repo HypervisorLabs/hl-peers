@@ -1,0 +1,78 @@
+{
+  "name": "peers_owner_q3_tier1",
+  "description": "Example query 3 — tier=1 is EXACT. max_tier=1 would also return tier 0. Single page.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "tier": "1"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-e366fe77f5830037\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "stale": false,
+      "chain": "Mainnet",
+      "generated_at": "2026-09-21T02:35:00Z",
+      "next_sweep_at": "2026-09-21T02:40:00Z",
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0",
+      "count": 1,
+      "total": 1,
+      "next_cursor": null,
+      "peers": [
+        {
+          "id": "198.51.100.20",
+          "tier": 1,
+          "state": "responsive",
+          "role": null,
+          "cc": "JP",
+          "cc_confidence": "medium",
+          "cc_source": "db",
+          "region": null,
+          "asn": "AS64500",
+          "org": "Example Hosting",
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 4,
+          "out_deg": 6,
+          "latest_height": 812345678,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "no",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": null,
+          "version": null,
+          "mempool": {
+            "serves": null,
+            "last_checked": null,
+            "verdict": null,
+            "first_frame_ms": null,
+            "source": null
+          },
+          "auction": {
+            "status": null,
+            "slot": null,
+            "since": null,
+            "last_bid_at": null
+          }
+        }
+      ]
+    }
+  }
+}

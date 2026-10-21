@@ -1,0 +1,29 @@
+{
+  "name": "error_401_invalid_key",
+  "description": "A key was supplied and is invalid. Omitting a key is NOT a 401 — anonymous is a supported tier.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "Authorization": "Bearer hlp_live_invalidkey0000000000"
+    }
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/invalid-api-key",
+      "title": "Invalid API key",
+      "status": 401,
+      "detail": "The supplied bearer key is not recognised. Call without a key for anonymous access."
+    }
+  }
+}

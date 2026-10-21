@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hl-peers"
+version = "1.1.0"
+description = "Client for the Hyperliquid Peer API, and an offline editor for hl-node's override_gossip_config.json"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }  # the repo LICENSE is one level up, outside this project dir
+authors = [{ name = "Hypervisor Labs" }]
+keywords = ["hyperliquid", "hl-node", "peers", "gossip", "node-operations"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: System Administrators",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+httpx = ["httpx>=0.24"]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.5",
+  "mypy>=1.8",
+  "build>=1.0",
+  "twine>=5.0",
+  "httpx>=0.24",
+]
+
+[project.scripts]
+hl-peers = "hl_peers.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HypervisorLabs/hl-peers"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hl_peers"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --doctest-glob=*.md"
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+src = ["src", "tests"]
+# Markdown is formatted by hand: the doc examples align their comments on purpose.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF"]
+# UP031: %-formatting is used throughout on purpose — it keeps every message a
+# plain string the 3.9 stdlib formats identically, and it matches tools/.
+ignore = ["UP006", "UP007", "UP031", "UP035", "UP045", "B905", "SIM105"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501", "F811", "RUF059"]
+
+[tool.mypy]
+# No `python_version = "3.9"`: current mypy refuses to target < 3.10. The 3.9
+# floor is enforced by ruff's `target-version = "py39"` instead.
+strict = true
+files = ["src"]
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = "httpx.*"
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["hl_peers"]

@@ -1,0 +1,25 @@
+{
+  "name": "validate_same_ip_in_both_lists_is_allowed",
+  "description": "An IP MAY be both a root and a reserved peer.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false,
+    "reserved_peer_ips": [
+      "192.0.2.10"
+    ]
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "value": "ok",
+    "warnings": []
+  }
+}

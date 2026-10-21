@@ -1,0 +1,245 @@
+{
+  "name": "facets",
+  "description": "Discovery. available:false = the attribute is NOT COLLECTED; an empty values list under available:true means collected-and-nothing-matches.",
+  "request": {
+    "method": "GET",
+    "path": "/peers/facets",
+    "query": {},
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-124f5d9e5b4a190d\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "stale": false,
+      "chain": "Mainnet",
+      "generated_at": "2026-09-21T02:35:00Z",
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0",
+      "total": 912,
+      "facets": {
+        "tier": {
+          "available": true,
+          "values": [
+            {
+              "value": "0",
+              "count": 61
+            },
+            {
+              "value": "1",
+              "count": 137
+            },
+            {
+              "value": "2",
+              "count": 604
+            },
+            {
+              "value": "null",
+              "count": 110
+            }
+          ]
+        },
+        "cc": {
+          "available": true,
+          "values": [
+            {
+              "value": "JP",
+              "count": 341
+            },
+            {
+              "value": "DE",
+              "count": 122
+            },
+            {
+              "value": "US",
+              "count": 118
+            }
+          ]
+        },
+        "region": {
+          "available": false,
+          "values": []
+        },
+        "asn": {
+          "available": false,
+          "values": []
+        },
+        "role": {
+          "available": true,
+          "values": [
+            {
+              "value": "sentry",
+              "count": 61
+            },
+            {
+              "value": "null",
+              "count": 851
+            }
+          ]
+        },
+        "label": {
+          "available": true,
+          "values": [
+            {
+              "value": "tier0",
+              "count": 61
+            },
+            {
+              "value": "sentry",
+              "count": 61
+            },
+            {
+              "value": "sentry:foundation",
+              "count": 25
+            },
+            {
+              "value": "sentry:operator",
+              "count": 36
+            },
+            {
+              "value": "unreachable",
+              "count": 94
+            }
+          ]
+        },
+        "state": {
+          "available": true,
+          "values": [
+            {
+              "value": "responsive",
+              "count": 818
+            },
+            {
+              "value": "open",
+              "count": 0
+            },
+            {
+              "value": "full",
+              "count": 0
+            },
+            {
+              "value": "syncing",
+              "count": 0
+            },
+            {
+              "value": "unreachable",
+              "count": 94
+            },
+            {
+              "value": "unknown",
+              "count": 0
+            }
+          ]
+        },
+        "connectable": {
+          "available": true,
+          "values": [
+            {
+              "value": "yes",
+              "count": 517
+            },
+            {
+              "value": "no",
+              "count": 301
+            },
+            {
+              "value": "unknown",
+              "count": 94
+            }
+          ]
+        },
+        "version": {
+          "available": false,
+          "values": []
+        },
+        "uptime": {
+          "available": true,
+          "values": [
+            {
+              "value": "0.99",
+              "count": 402
+            },
+            {
+              "value": "0.95",
+              "count": 611
+            },
+            {
+              "value": "0.9",
+              "count": 700
+            },
+            {
+              "value": "0.5",
+              "count": 790
+            },
+            {
+              "value": "null",
+              "count": 122
+            }
+          ]
+        },
+        "serves_mempool": {
+          "available": true,
+          "values": [
+            {
+              "value": "true",
+              "count": 143
+            },
+            {
+              "value": "false",
+              "count": 388
+            },
+            {
+              "value": "null",
+              "count": 381
+            }
+          ]
+        },
+        "auction": {
+          "available": true,
+          "values": [
+            {
+              "value": "holds_slot",
+              "count": 9
+            },
+            {
+              "value": "bidding",
+              "count": 14
+            },
+            {
+              "value": "bid_before",
+              "count": 31
+            },
+            {
+              "value": "null",
+              "count": 858
+            }
+          ]
+        }
+      },
+      "geo_coverage": {
+        "peers": 912,
+        "asn": 0.99,
+        "cc": 0.97,
+        "region": 0.12,
+        "cc_confidence": {
+          "high": 0.41,
+          "medium": 0.33,
+          "low": 0.23
+        },
+        "withheld_contradicted": 6,
+        "source": "dbip-lite",
+        "db_version": "2026-09"
+      }
+    }
+  }
+}

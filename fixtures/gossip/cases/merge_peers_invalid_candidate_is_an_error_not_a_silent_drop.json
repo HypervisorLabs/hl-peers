@@ -1,0 +1,33 @@
+{
+  "name": "merge_peers_invalid_candidate_is_an_error_not_a_silent_drop",
+  "description": "A non-IPv4 candidate is refused; silently dropping it would shrink the root list without telling the operator.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1",
+          "not-an-ip"
+        ]
+      ],
+      "opts": {
+        "mode": "replace"
+      }
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "reason_contains": "not an IPv4"
+    }
+  }
+}

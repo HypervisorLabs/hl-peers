@@ -1,0 +1,32 @@
+{
+  "name": "merge_peers_dedupe_first_wins",
+  "description": "Repeats collapse, first occurrence wins, order otherwise preserved. Collapsing a duplicate is not a truncation and raises no warning.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1",
+          "203.0.113.2",
+          "203.0.113.1"
+        ]
+      ],
+      "opts": {
+        "mode": "replace"
+      }
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"203.0.113.1\"\n    },\n    {\n      \"Ip\": \"203.0.113.2\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": []
+  }
+}

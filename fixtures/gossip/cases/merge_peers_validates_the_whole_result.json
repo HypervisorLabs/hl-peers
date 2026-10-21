@@ -1,0 +1,36 @@
+{
+  "name": "merge_peers_validates_the_whole_result",
+  "description": "A merge onto a config that already carries a bad reserved_peer_ips entry fails AT THE MERGE, where the caller can still act on it — not silently, and not later at save().",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true,
+    "reserved_peer_ips": [
+      "198.51.100.300"
+    ]
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1"
+        ]
+      ],
+      "opts": {
+        "mode": "replace"
+      }
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "reserved_peer_ips[0]",
+      "at_op": 0
+    }
+  }
+}

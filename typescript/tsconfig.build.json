@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "removeComments": false,
+
+    // No .map files: the published tarball carries `dist` only, so a source
+    // map would point at sources that are not in it.
+    "sourceMap": false,
+    "declarationMap": false
+  },
+  "include": ["src"]
+}

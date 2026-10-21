@@ -1,0 +1,56 @@
+{
+  "name": "merge_peers_truncation_warning_survives_to_save",
+  "description": "§6.5: a merge warning is PENDING on the config, so save() re-reports it even though the caller ignored what merge_peers returned.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1",
+          "203.0.113.2",
+          "203.0.113.3",
+          "203.0.113.4",
+          "203.0.113.5",
+          "203.0.113.6",
+          "203.0.113.7",
+          "203.0.113.8",
+          "203.0.113.9",
+          "203.0.113.10",
+          "203.0.113.11",
+          "203.0.113.12"
+        ]
+      ],
+      "opts": {
+        "mode": "replace"
+      }
+    },
+    {
+      "op": "save",
+      "args": [
+        "$TMPDIR/override_gossip_config.json"
+      ]
+    }
+  ],
+  "expect": {
+    "value": {
+      "written": true,
+      "changed": true
+    },
+    "warnings": [
+      "truncated"
+    ],
+    "file_after": {
+      "path": "$TMPDIR/override_gossip_config.json",
+      "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"203.0.113.1\"\n    },\n    {\n      \"Ip\": \"203.0.113.2\"\n    },\n    {\n      \"Ip\": \"203.0.113.3\"\n    },\n    {\n      \"Ip\": \"203.0.113.4\"\n    },\n    {\n      \"Ip\": \"203.0.113.5\"\n    },\n    {\n      \"Ip\": \"203.0.113.6\"\n    },\n    {\n      \"Ip\": \"203.0.113.7\"\n    },\n    {\n      \"Ip\": \"203.0.113.8\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n"
+    }
+  }
+}

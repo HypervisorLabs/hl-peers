@@ -1,0 +1,25 @@
+{
+  "name": "has_root_ip_true",
+  "description": "Query accessor.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "has_root_ip",
+      "args": [
+        "192.0.2.10"
+      ]
+    }
+  ],
+  "expect": {
+    "value": true,
+    "warnings": []
+  }
+}

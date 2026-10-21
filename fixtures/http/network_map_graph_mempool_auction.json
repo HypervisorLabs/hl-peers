@@ -1,0 +1,90 @@
+{
+  "name": "network_map_graph_mempool_auction",
+  "description": "/network-map/graph?serves_mempool=true&auction=holds_slot — the same closed-enum filters as /peers; edges survive only between surviving nodes. No city positions in this generation: `cities`/`attribution` absent, every `city` null.",
+  "request": {
+    "method": "GET",
+    "path": "/network-map/graph",
+    "query": {
+      "auction": "holds_slot",
+      "serves_mempool": "true"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-09ab067f2556c3e3\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "operator_nodes": {
+        "count": null
+      },
+      "stale": false,
+      "generated_at": "2026-09-21T02:35:00Z",
+      "node_count": 1,
+      "edge_count": 0,
+      "tier_count": 1,
+      "unreached": 0,
+      "tiers": [
+        {
+          "tier": 1,
+          "count": 1
+        }
+      ],
+      "truncated": false,
+      "nodes": [
+        {
+          "id": "192.0.2.10",
+          "tier": 1,
+          "state": "responsive",
+          "role": "sentry",
+          "cc": "DE",
+          "cc_confidence": "high",
+          "cc_source": "db+rtt-confirmed",
+          "region": null,
+          "asn": "AS64500",
+          "org": "Example Hosting",
+          "city": null,
+          "operator": "Example Operator",
+          "name": "Example Operator",
+          "in_deg": 3,
+          "out_deg": 5,
+          "latest_height": 812345678,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "yes",
+          "labels": [
+            "sentry"
+          ],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": null,
+          "mempool": {
+            "serves": true,
+            "last_checked": "2026-09-21T02:30:00Z",
+            "verdict": "serves",
+            "first_frame_ms": 412,
+            "source": "probe"
+          },
+          "auction": {
+            "status": "holds_slot",
+            "slot": 3,
+            "since": "2026-09-20T11:00:00Z",
+            "last_bid_at": "2026-09-20T10:59:12Z"
+          }
+        }
+      ],
+      "edges": []
+    }
+  }
+}

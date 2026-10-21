@@ -1,0 +1,32 @@
+{
+  "name": "mutators_do_not_validate_ips_validate_does",
+  "description": "🔴 Only set_n_gossip_peers refuses at the mutator (§6.2). Every other setter stores what it was given and validate() owns the rule, so a sequence of edits fails at the same operation in all four languages.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "add_root_ip",
+      "args": [
+        "192.0.2.256"
+      ]
+    },
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips[1]",
+      "at_op": 1,
+      "reason_contains": "not an IPv4"
+    }
+  }
+}

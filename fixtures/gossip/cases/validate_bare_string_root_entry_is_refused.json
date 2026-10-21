@@ -1,0 +1,21 @@
+{
+  "name": "validate_bare_string_root_entry_is_refused",
+  "description": "A bare string inside a PARSED root_node_ips is the file the node will not accept. Bare strings are accepted only as constructor INPUT.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      "192.0.2.10"
+    ]
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips[0]"
+    }
+  }
+}

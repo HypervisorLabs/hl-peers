@@ -1,0 +1,29 @@
+{
+  "name": "remove_reserved_peer_ip",
+  "description": "Removes a bare string.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false,
+    "reserved_peer_ips": [
+      "198.51.100.20",
+      "198.51.100.21"
+    ]
+  },
+  "operations": [
+    {
+      "op": "remove_reserved_peer_ip",
+      "args": [
+        "198.51.100.21"
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false,\n  \"reserved_peer_ips\": [\n    \"198.51.100.20\"\n  ]\n}\n",
+    "warnings": []
+  }
+}

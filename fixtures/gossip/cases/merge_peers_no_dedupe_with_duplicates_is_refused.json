@@ -1,0 +1,35 @@
+{
+  "name": "merge_peers_no_dedupe_with_duplicates_is_refused",
+  "description": "dedupe:false is only usable on already-distinct input; validate rejects the duplicate rather than writing it.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1",
+          "203.0.113.1"
+        ]
+      ],
+      "opts": {
+        "mode": "replace",
+        "dedupe": false
+      }
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips",
+      "reason_contains": "duplicate"
+    }
+  }
+}

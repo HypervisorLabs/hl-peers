@@ -1,0 +1,28 @@
+{
+  "name": "set_n_gossip_peers_below_range_is_refused",
+  "description": "D-C: refuse, never silently clamp. 7 < 8.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "set_n_gossip_peers",
+      "args": [
+        7
+      ]
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "n_gossip_peers",
+      "at_op": 0
+    }
+  }
+}

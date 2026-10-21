@@ -1,0 +1,25 @@
+{
+  "name": "split_client_blocks_true_is_written",
+  "description": "true is written explicitly.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "set_split_client_blocks",
+      "args": [
+        true
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false,\n  \"split_client_blocks\": true\n}\n",
+    "warnings": []
+  }
+}

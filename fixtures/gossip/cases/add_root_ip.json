@@ -1,0 +1,25 @@
+{
+  "name": "add_root_ip",
+  "description": "Appends.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "add_root_ip",
+      "args": [
+        "192.0.2.11"
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    },\n    {\n      \"Ip\": \"192.0.2.11\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": []
+  }
+}

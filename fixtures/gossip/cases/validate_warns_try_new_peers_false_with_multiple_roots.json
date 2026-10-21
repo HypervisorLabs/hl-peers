@@ -1,0 +1,27 @@
+{
+  "name": "validate_warns_try_new_peers_false_with_multiple_roots",
+  "description": "Unverified: whether try_new_peers:false restricts a MULTI-entry list to exactly that list. Only a single root is known to pin.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      },
+      {
+        "Ip": "192.0.2.11"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "value": "ok",
+    "warnings": [
+      "try_new_peers_false_multi_root"
+    ]
+  }
+}

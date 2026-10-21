@@ -1,0 +1,34 @@
+{
+  "name": "error_429_rate_limited_long_retry_after",
+  "description": "Retry-After above the client cap (default 60 s): the client raises RateLimited immediately rather than blocking the caller for minutes.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "X-Mock-Scenario": "rate-limited-long"
+    }
+  },
+  "response": {
+    "status": 429,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "0",
+      "RateLimit-Reset": "3600",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400",
+      "Retry-After": "3600"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/rate-limited",
+      "title": "Rate limit exceeded",
+      "status": 429,
+      "detail": "Daily cap reached.",
+      "signup_url": "https://hypervisor.gg/docs/peer-api/authentication"
+    }
+  },
+  "expect": {
+    "retry_after_seconds": 3600
+  }
+}

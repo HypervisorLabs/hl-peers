@@ -1,0 +1,38 @@
+{
+  "name": "merge_peers_exclude_beats_keep_existing",
+  "description": "🪤 exclude wins over keep_existing, and the conflict is named in a warning that validate re-reports (§6.5).",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1"
+        ]
+      ],
+      "opts": {
+        "mode": "replace",
+        "keep_existing": [
+          "192.0.2.10"
+        ],
+        "exclude": [
+          "192.0.2.10"
+        ]
+      }
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"203.0.113.1\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": [
+      "exclude_overrides_keep_existing"
+    ]
+  }
+}

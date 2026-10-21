@@ -1,0 +1,32 @@
+{
+  "name": "error_400_filter_unavailable_mempool",
+  "description": "The mempool facet carries no data in this generation: 400 filter-unavailable, never an empty list.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "serves_mempool": "true"
+    },
+    "headers": {
+      "X-Mock-Scenario": "mempool-unavailable"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/filter-unavailable",
+      "title": "Filter not available",
+      "status": 400,
+      "detail": "serves_mempool is not collected by this producer right now; see /peers/facets",
+      "parameter": "serves_mempool"
+    }
+  }
+}

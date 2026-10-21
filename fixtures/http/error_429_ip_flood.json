@@ -1,0 +1,35 @@
+{
+  "name": "error_429_ip_flood",
+  "description": "The per-address flood limit (upstream IpRateLimit, before tiering) answers RFC 9457 problem+json too: a `rate-limited` type, Retry-After in seconds, its own RateLimit-* window and no-store. The client maps it exactly like the tier 429.",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {},
+    "headers": {
+      "X-Mock-Scenario": "rate-limited-flood"
+    }
+  },
+  "response": {
+    "status": 429,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "100",
+      "RateLimit-Remaining": "0",
+      "RateLimit-Reset": "1",
+      "RateLimit-Policy": "100;w=1",
+      "Retry-After": "1",
+      "Cache-Control": "no-store"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/rate-limited",
+      "title": "Too many requests",
+      "status": 429,
+      "detail": "Per-address request rate exceeded (100 per 1 s). Retry after 1 s.",
+      "signup_url": "https://hypervisor.gg/docs/peer-api/authentication"
+    }
+  },
+  "expect": {
+    "retry_after_seconds": 1
+  }
+}

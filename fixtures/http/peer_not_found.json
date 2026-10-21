@@ -1,0 +1,27 @@
+{
+  "name": "peer_not_found",
+  "description": "A well-formed IPv4 in no source is 404 — distinct from the 400 a malformed IPv4 gets. These must not collapse.",
+  "request": {
+    "method": "GET",
+    "path": "/peers/198.51.100.254",
+    "query": {},
+    "headers": {}
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/peer-not-found",
+      "title": "Peer not found",
+      "status": 404,
+      "detail": "198.51.100.254 appears in no source."
+    }
+  }
+}

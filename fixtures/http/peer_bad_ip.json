@@ -1,0 +1,28 @@
+{
+  "name": "peer_bad_ip",
+  "description": "A malformed IPv4 is 400, never 404.",
+  "request": {
+    "method": "GET",
+    "path": "/peers/not-an-ip",
+    "query": {},
+    "headers": {}
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/invalid-filter-value",
+      "title": "Invalid IP",
+      "status": 400,
+      "detail": "'not-an-ip' is not an IPv4 address",
+      "parameter": "ip"
+    }
+  }
+}

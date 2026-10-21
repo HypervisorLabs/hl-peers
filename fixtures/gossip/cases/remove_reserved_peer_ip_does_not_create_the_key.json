@@ -1,0 +1,25 @@
+{
+  "name": "remove_reserved_peer_ip_does_not_create_the_key",
+  "description": "A no-op remove on a config with no reserved_peer_ips leaves it without one. Materialising an empty array changes the file's bytes for a call that did nothing.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "remove_reserved_peer_ip",
+      "args": [
+        "198.51.100.20"
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": []
+  }
+}

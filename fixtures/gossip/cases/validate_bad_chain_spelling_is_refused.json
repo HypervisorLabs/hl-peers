@@ -1,0 +1,24 @@
+{
+  "name": "validate_bad_chain_spelling_is_refused",
+  "description": "`mainnet` is not `Mainnet`; case matters.",
+  "input_config": {
+    "chain": "mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "chain"
+    }
+  }
+}

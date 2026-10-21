@@ -1,0 +1,36 @@
+{
+  "name": "merge_peers_no_dedupe_duplicate_removed_by_truncation_is_ok",
+  "description": "The dedupe:false refusal is validate()'s, AFTER truncation (§6.5 6-7). A duplicate that max_roots drops never reaches the file, so it must not fail the merge.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1",
+          "203.0.113.2",
+          "203.0.113.2"
+        ]
+      ],
+      "opts": {
+        "mode": "replace",
+        "dedupe": false,
+        "max_roots": 2
+      }
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"203.0.113.1\"\n    },\n    {\n      \"Ip\": \"203.0.113.2\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": [
+      "truncated"
+    ]
+  }
+}

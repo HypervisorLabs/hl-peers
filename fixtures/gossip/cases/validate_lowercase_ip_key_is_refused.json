@@ -1,0 +1,23 @@
+{
+  "name": "validate_lowercase_ip_key_is_refused",
+  "description": "🪤 The capitalization is load-bearing: `ip` is not `Ip`.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "ip": "192.0.2.10"
+      }
+    ]
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips[0]"
+    }
+  }
+}

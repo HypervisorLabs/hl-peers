@@ -1,0 +1,25 @@
+{
+  "name": "add_root_ip_duplicate_is_a_noop",
+  "description": "A duplicate add is a no-op, not an error.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": false
+  },
+  "operations": [
+    {
+      "op": "add_root_ip",
+      "args": [
+        "192.0.2.10"
+      ]
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"192.0.2.10\"\n    }\n  ],\n  \"try_new_peers\": false\n}\n",
+    "warnings": []
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "validate_duplicate_roots_are_refused",
+  "description": "Duplicates inside root_node_ips.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      },
+      {
+        "Ip": "192.0.2.10"
+      }
+    ]
+  },
+  "operations": [
+    {
+      "op": "validate"
+    }
+  ],
+  "expect": {
+    "error": {
+      "kind": "Invalid",
+      "parameter": "root_node_ips",
+      "reason_contains": "duplicate"
+    }
+  }
+}

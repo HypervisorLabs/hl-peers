@@ -1,0 +1,28 @@
+{
+  "name": "root_ips_accessor_returns_bare_strings",
+  "description": "The {\"Ip\": …} wrapper is an encoding detail and does not leak here.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      },
+      {
+        "Ip": "198.51.100.7"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "root_ips"
+    }
+  ],
+  "expect": {
+    "value": [
+      "192.0.2.10",
+      "198.51.100.7"
+    ],
+    "warnings": []
+  }
+}

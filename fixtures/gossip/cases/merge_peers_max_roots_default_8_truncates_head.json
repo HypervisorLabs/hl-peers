@@ -1,0 +1,43 @@
+{
+  "name": "merge_peers_max_roots_default_8_truncates_head",
+  "description": "12 candidates, default max_roots=8, head kept, `truncated` warning emitted by the merge AND re-reported by validate (§6.5). A shorter root list starts the node faster; a longer one buys nothing.",
+  "input_config": {
+    "chain": "Mainnet",
+    "root_node_ips": [
+      {
+        "Ip": "192.0.2.10"
+      }
+    ],
+    "try_new_peers": true
+  },
+  "operations": [
+    {
+      "op": "merge_peers",
+      "args": [
+        [
+          "203.0.113.1",
+          "203.0.113.2",
+          "203.0.113.3",
+          "203.0.113.4",
+          "203.0.113.5",
+          "203.0.113.6",
+          "203.0.113.7",
+          "203.0.113.8",
+          "203.0.113.9",
+          "203.0.113.10",
+          "203.0.113.11",
+          "203.0.113.12"
+        ]
+      ],
+      "opts": {
+        "mode": "replace"
+      }
+    }
+  ],
+  "expect": {
+    "json_text": "{\n  \"chain\": \"Mainnet\",\n  \"root_node_ips\": [\n    {\n      \"Ip\": \"203.0.113.1\"\n    },\n    {\n      \"Ip\": \"203.0.113.2\"\n    },\n    {\n      \"Ip\": \"203.0.113.3\"\n    },\n    {\n      \"Ip\": \"203.0.113.4\"\n    },\n    {\n      \"Ip\": \"203.0.113.5\"\n    },\n    {\n      \"Ip\": \"203.0.113.6\"\n    },\n    {\n      \"Ip\": \"203.0.113.7\"\n    },\n    {\n      \"Ip\": \"203.0.113.8\"\n    }\n  ],\n  \"try_new_peers\": true\n}\n",
+    "warnings": [
+      "truncated"
+    ]
+  }
+}
