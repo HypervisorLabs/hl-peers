@@ -94,12 +94,23 @@ def _octal(value: str) -> int:
         raise argparse.ArgumentTypeError("%r is not octal permission bits" % value) from None
 
 
+def _add_network_flag(parser: argparse.ArgumentParser) -> None:
+    """``--network mainnet|testnet`` (testnet is beta). Unset sends nothing (mainnet).
+    Checked by the client, so an out-of-enum value is an ``Invalid`` like ``--chain``."""
+    parser.add_argument(
+        "--network",
+        default=argparse.SUPPRESS,
+        help="mainnet|testnet (testnet is beta); unset = mainnet",
+    )
+
+
 def _add_filter_flags(parser: argparse.ArgumentParser) -> None:
     """Every filter of CLIENT_SPEC §2.1 — shared by ``query``, ``facets`` and
     ``gossip update``."""
     parser.add_argument(
         "--chain", default=argparse.SUPPRESS, help="Mainnet|Testnet; only Mainnet is served"
     )
+    _add_network_flag(parser)
     parser.add_argument("--cc", default=argparse.SUPPRESS, help="ISO-3166-1 alpha-2, CSV")
     parser.add_argument(
         "--country", default=argparse.SUPPRESS, help="alias of --cc server-side (union), CSV"
@@ -149,6 +160,8 @@ def build_query(args: argparse.Namespace) -> PeerQuery:
 
     if get("chain"):
         query = query.chain(args.chain)
+    if get("network") is not None:
+        query = query.network(args.network)
 
     if get("cc"):
         query = query.cc(args.cc)
@@ -221,6 +234,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     peer_cmd = sub.add_parser("peer", parents=[globals_parser], help="one peer's dossier")
     peer_cmd.add_argument("ip")
+    _add_network_flag(peer_cmd)
 
     gossip = sub.add_parser("gossip", parents=[globals_parser], help="the override file")
     gsub = gossip.add_subparsers(dest="gossip_command")
@@ -354,7 +368,7 @@ def _cmd_facets(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
 
 def _cmd_peer(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
     client = make_client(args)
-    detail = client.get_peer(args.ip)
+    detail = client.get_peer(args.ip, network=getattr(args, "network", None))
     out.write(json.dumps(detail.raw, indent=2, ensure_ascii=False) + "\n")
     return EXIT_OK
 

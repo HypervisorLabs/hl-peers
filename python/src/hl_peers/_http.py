@@ -43,7 +43,7 @@ from .models import (
     RateLimit,
     compute_reset_at,
 )
-from .query import CLOSED_ENUMS, _nullable_tokens
+from .query import CLOSED_ENUMS, _nullable_tokens, check_network
 
 __all__ = [
     "DEFAULT_BASE_PATH",
@@ -387,6 +387,7 @@ def network_map_query_string(
     label: MapCsv = None,
     serves_mempool: MapNullableCsv = None,
     auction: MapNullableCsv = None,
+    network: Optional[str] = None,
 ) -> str:
     """The canonical query string for ``/network-map/*`` (CLIENT_SPEC §4.8).
 
@@ -399,6 +400,8 @@ def network_map_query_string(
     'connectable=yes%2Cno&max_tier=2'
     >>> network_map_query_string(serves_mempool=[True, None], auction="holds_slot")
     'auction=holds_slot&serves_mempool=true%2Cnull'
+    >>> network_map_query_string(network="testnet")
+    'network=testnet'
     """
     params: Dict[str, str] = {}
     if max_tier is not None:
@@ -436,6 +439,9 @@ def network_map_query_string(
                 raise Invalid(name, "%r is not one of %s" % (token, ", ".join(allowed)))
         if tokens:
             params[name] = ",".join(tokens)
+    # Unreleased (testnet beta, §10 D-U): the same closed enum as the builder.
+    if check_network(network) is not None:
+        params["network"] = str(network)
     return "&".join(
         "%s=%s" % (quote(k, safe=""), quote(v, safe="")) for k, v in sorted(params.items())
     )

@@ -174,6 +174,9 @@ class Envelope:
 
     ``attribution`` is the licence attribution for the geo/ASN data in the
     response (for example the DB-IP credit); show it wherever you show that data.
+
+    ``network`` is ``"testnet"`` on a ``network=testnet`` (beta) body and
+    ``None`` otherwise, which means mainnet. An open string, decoded as-is.
     """
 
     version: Optional[str] = None
@@ -183,6 +186,7 @@ class Envelope:
     generated_at: Optional[str] = None
     next_sweep_at: Optional[str] = None
     attribution: Optional[str] = None
+    network: Optional[str] = None  # "testnet" on a testnet body; None means mainnet
     extra: Mapping[str, Any] = field(default_factory=dict)
 
     _KNOWN = (
@@ -193,6 +197,7 @@ class Envelope:
         "generated_at",
         "next_sweep_at",
         "attribution",
+        "network",
     )
 
     @classmethod
@@ -206,6 +211,7 @@ class Envelope:
             generated_at=body.get("generated_at"),
             next_sweep_at=body.get("next_sweep_at"),
             attribution=body.get("attribution"),
+            network=body.get("network"),
             extra={k: v for k, v in body.items() if k not in ignored},
         )
 
@@ -301,6 +307,11 @@ class Peer:
     ``city`` is the id of the peer's city cluster where the producer
     serves city positions, else ``None`` — never a coordinate. Any key a later
     server adds lands in ``extra``.
+
+    ``version`` is the node's reported **hardfork version** on
+    ``network="testnet"`` (beta), an opaque string such as ``"1550"``, or
+    ``None`` when the node did not report one. On mainnet it is always ``None``
+    (not published).
     """
 
     id: str
@@ -327,7 +338,7 @@ class Peer:
     labels: List[str] = field(default_factory=list)  # open set
     last_seen: Optional[str] = None
     uptime: Optional[float] = None
-    version: Optional[str] = None  # always null today (not published)
+    version: Optional[str] = None  # testnet: hardfork version (opaque str); mainnet: None
     mempool: PeerMempool = field(default_factory=PeerMempool)
     auction: PeerAuction = field(default_factory=PeerAuction)
     extra: Mapping[str, Any] = field(default_factory=dict)
@@ -445,6 +456,11 @@ class PeerPage:
     def attribution(self) -> Optional[str]:
         return self.envelope.attribution
 
+    @property
+    def network(self) -> Optional[str]:
+        """``"testnet"`` on a testnet body, else ``None`` (mainnet)."""
+        return self.envelope.network
+
     def __iter__(self) -> Iterator[Peer]:
         return iter(self.peers)
 
@@ -471,6 +487,11 @@ class PeerDetail:
     @property
     def available(self) -> bool:
         return self.envelope.available
+
+    @property
+    def network(self) -> Optional[str]:
+        """``"testnet"`` on a testnet body, else ``None`` (mainnet)."""
+        return self.envelope.network
 
 
 @dataclass(frozen=True)
@@ -519,6 +540,11 @@ class Facets:
     @property
     def available(self) -> bool:
         return self.envelope.available
+
+    @property
+    def network(self) -> Optional[str]:
+        """``"testnet"`` on a testnet body, else ``None`` (mainnet)."""
+        return self.envelope.network
 
     def facet_available(self, name: str) -> bool:
         """Pre-check a filter instead of discovering ``filter-unavailable`` on a 400.
@@ -672,6 +698,8 @@ class NetworkMapSummary:
     version: Optional[str] = None
     available: bool = True
     stale: bool = False
+    #: ``"testnet"`` on a ``network=testnet`` (beta) body, else ``None`` (mainnet).
+    network: Optional[str] = None
     generated_at: Optional[str] = None
     operator_nodes: OperatorNodes = field(default_factory=OperatorNodes)
     node_count: Optional[int] = None
@@ -714,6 +742,8 @@ class NetworkMapGraph:
     version: Optional[str] = None
     available: bool = True
     stale: bool = False
+    #: ``"testnet"`` on a ``network=testnet`` (beta) body, else ``None`` (mainnet).
+    network: Optional[str] = None
     generated_at: Optional[str] = None
     operator_nodes: OperatorNodes = field(default_factory=OperatorNodes)
     node_count: Optional[int] = None
@@ -759,6 +789,7 @@ def _map_common(body: Mapping[str, Any]) -> Dict[str, Any]:
         "version": body.get("version"),
         "available": bool(body.get("available", True)),
         "stale": bool(body.get("stale", False)),
+        "network": body.get("network"),
         "generated_at": body.get("generated_at"),
         "operator_nodes": OperatorNodes(
             count=operator_nodes.get("count") if isinstance(operator_nodes, Mapping) else None

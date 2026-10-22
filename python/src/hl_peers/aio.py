@@ -57,7 +57,7 @@ from .models import (
     RateLimit,
     utcnow,
 )
-from .query import PeerQuery
+from .query import Network, PeerQuery, check_network
 from .transport import HttpResponse, normalize_headers
 
 __all__ = ["AsyncPeerApiClient", "HttpxAsyncTransport"]
@@ -131,6 +131,7 @@ class AsyncPeerApiClient:
         clock: Callable[[], datetime] = utcnow,
         suppress_placeholder_warning: bool = False,
         env: Optional[Mapping[str, str]] = None,
+        network: Optional[Network] = None,
     ) -> None:
         environ = env if env is not None else os.environ
         self.base_url = base_url or environ.get("HL_PEER_API_BASE_URL") or DEFAULT_BASE_URL
@@ -146,6 +147,10 @@ class AsyncPeerApiClient:
         self._sleep = sleep or asyncio.sleep
         self._random = random
         self.clock = clock
+        #: The default ``network`` for every call that sets none (CLIENT_SPEC §1,
+        #: §10 D-U). ``None`` sends nothing, so the server's default (mainnet)
+        #: governs; a per-call or per-query value wins.
+        self.network: Optional[Network] = check_network(network)
         del suppress_placeholder_warning  # has no effect
         base_agent = user_agent or USER_AGENT
         self.user_agent = base_agent + (" " + user_agent_suffix if user_agent_suffix else "")
@@ -168,7 +173,7 @@ class AsyncPeerApiClient:
         *,
         if_none_match: Optional[str] = None,
     ) -> Union[PeerPage, NotModified]:
-        query = query or PeerQuery()
+        query = self._with_network(query)
         _refuse_gossip_config_format(query)
         raw = await self._get(self.base_path + PEERS_PATH, query, if_none_match=if_none_match)
         if isinstance(raw, NotModified):
@@ -181,7 +186,7 @@ class AsyncPeerApiClient:
     ) -> GossipConfigResult:
         """See :meth:`PeerApiClient.list_peers_as_gossip_config`. Does not write;
         write with ``result.config.save(path)``."""
-        query = (query or PeerQuery()).format("gossip_config")
+        query = self._with_network(query).format("gossip_config")
         raw = await self._get(self.base_path + PEERS_PATH, query)
         assert not isinstance(raw, NotModified)
         return decode_gossip_config(raw)
@@ -228,18 +233,21 @@ class AsyncPeerApiClient:
     ) -> List[Peer]:
         return [peer async for peer in self.iter_peers(query, max_items=max_items)]
 
-    async def get_peer(self, ip: str) -> PeerDetail:
+    async def get_peer(self, ip: str, *, network: Optional[Network] = None) -> PeerDetail:
         _require_query_ipv4(ip)
         from urllib.parse import quote
 
-        raw = await self._get(self.base_path + PEERS_PATH + "/" + quote(ip, safe=""), PeerQuery())
+        raw = await self._get(
+            self.base_path + PEERS_PATH + "/" + quote(ip, safe=""),
+            PeerQuery().network(self._network_for(network)),
+        )
         assert not isinstance(raw, NotModified)
         return decode_peer_detail(raw)
 
     async def facets(self, query: Optional[PeerQuery] = None) -> Facets:
         """Every filter is accepted; ``sort``/``limit``/``cursor``/``fields``/
         ``format``/``try_new_peers`` are refused with ``Invalid``."""
-        query = query or PeerQuery()
+        query = self._with_network(query)
         _refuse_non_filters(query)
         raw = await self._get(self.base_path + FACETS_PATH, query)
         assert not isinstance(raw, NotModified)
@@ -257,6 +265,7 @@ class AsyncPeerApiClient:
         label: MapCsv = None,
         serves_mempool: MapNullableCsv = None,
         auction: MapNullableCsv = None,
+        network: Optional[Network] = None,
     ) -> NetworkMapGraph:
         """See :meth:`PeerApiClient.network_map_graph`."""
         qs = network_map_query_string(
@@ -269,6 +278,7 @@ class AsyncPeerApiClient:
             label=label,
             serves_mempool=serves_mempool,
             auction=auction,
+            network=self._network_for(network),
         )
         raw = await self._get(self.base_path + NETWORK_MAP_GRAPH_PATH, qs)
         assert not isinstance(raw, NotModified)
@@ -286,6 +296,7 @@ class AsyncPeerApiClient:
         label: MapCsv = None,
         serves_mempool: MapNullableCsv = None,
         auction: MapNullableCsv = None,
+        network: Optional[Network] = None,
     ) -> NetworkMapSummary:
         """See :meth:`PeerApiClient.network_map_summary`."""
         qs = network_map_query_string(
@@ -298,10 +309,24 @@ class AsyncPeerApiClient:
             label=label,
             serves_mempool=serves_mempool,
             auction=auction,
+            network=self._network_for(network),
         )
         raw = await self._get(self.base_path + NETWORK_MAP_SUMMARY_PATH, qs)
         assert not isinstance(raw, NotModified)
         return decode_network_map_summary(raw)
+
+    # -- network (testnet beta, CLIENT_SPEC §10 D-U) ------------------------
+    def _network_for(self, network: Optional[str]) -> Optional[Network]:
+        """A per-call ``network`` wins; else the client default; else unset."""
+        checked = check_network(network)
+        return checked if checked is not None else self.network
+
+    def _with_network(self, query: Optional[PeerQuery]) -> PeerQuery:
+        """The query, with the client's default ``network`` when it sets none."""
+        query = query or PeerQuery()
+        if "network" in query.params or self.network is None:
+            return query
+        return query.network(self.network)
 
     # -- plumbing ----------------------------------------------------------
     async def _get(

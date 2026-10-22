@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union, cast
 
 from .errors import Invalid
 
@@ -24,7 +24,9 @@ except ImportError:  # pragma: no cover
 
 __all__ = [
     "FACET_REFUSED_PARAMS",
+    "Network",
     "PeerQuery",
+    "check_network",
     "mempool_servers",
     "not_full",
     "sentries",
@@ -32,6 +34,9 @@ __all__ = [
 ]
 
 Chain = Literal["Mainnet", "Testnet"]
+#: Which network's peer graph to read (CLIENT_SPEC §10 D-U, testnet beta).
+#: Lower-case and case-sensitive, so it never blurs with the capitalised ``Chain``.
+Network = Literal["mainnet", "testnet"]
 Sort = Literal["tier", "blocks_behind", "out_deg", "last_seen", "random"]
 Format = Literal["json", "gossip_config"]
 Connectable = Literal["yes", "no", "unknown"]
@@ -41,6 +46,7 @@ AuctionStatus = Literal["holds_slot", "bidding", "bid_before"]
 #: The closed enums the spec defines with ``enum:``. Everything else is open.
 CLOSED_ENUMS: Dict[str, Tuple[str, ...]] = {
     "chain": ("Mainnet", "Testnet"),
+    "network": ("mainnet", "testnet"),
     "sort": ("tier", "blocks_behind", "out_deg", "last_seen", "random"),
     "format": ("json", "gossip_config"),
     "connectable": ("yes", "no", "unknown"),
@@ -63,6 +69,18 @@ FACET_REFUSED_PARAMS: Tuple[str, ...] = (
 _SEEN_WITHIN = re.compile(r"^[0-9]+[mhd]$")
 
 CsvValue = Union[str, Sequence[str], None]
+
+
+def check_network(value: Optional[str]) -> Optional[Network]:
+    """Validate a ``network`` value (closed, case-sensitive) and return it.
+
+    ``None`` means unset: nothing is sent and the server's default (mainnet)
+    governs. ``"Testnet"`` is refused: that spelling is the ``chain`` enum.
+    """
+    allowed = CLOSED_ENUMS["network"]
+    if value is not None and value not in allowed:
+        raise Invalid("network", "%r is not one of %s" % (value, ", ".join(allowed)))
+    return cast("Optional[Network]", value)
 
 
 def _flatten(values: Sequence[Any]) -> List[str]:
@@ -198,6 +216,20 @@ class PeerQuery:
         ``400 chain-not-served`` rather than silently Mainnet data."""
         return self._enum("chain", value)
 
+    def network(self, value: Optional[Network]) -> PeerQuery:
+        """Which network's peer graph to read: ``mainnet`` or ``testnet`` (beta).
+
+        Unset sends no ``network`` key, so the request is byte-identical to a
+        mainnet one and the server's default (mainnet) governs. When unset here,
+        the client's own ``network=`` default applies. Closed and
+        case-sensitive: ``"Testnet"`` raises :class:`~hl_peers.errors.Invalid`.
+
+        🪤 Not the same question as :meth:`chain`: ``network`` picks the graph,
+        ``chain`` filters on what the server states (a testnet body states
+        ``chain: "Testnet"``).
+        """
+        return self._with("network", check_network(value))
+
     def cc(self, *values: CsvValue) -> PeerQuery:
         """ISO-3166-1 alpha-2 country codes. Upper-cased on the wire.
 
@@ -331,7 +363,8 @@ class PeerQuery:
         return self._with("seen_within", value)
 
     def version(self, *values: CsvValue) -> PeerQuery:
-        """🪤 Not published today."""
+        """🪤 Published only on ``network=testnet`` (the hardfork version);
+        always null on mainnet."""
         return self._csv("version", values)
 
     def sort(self, value: Optional[Sort]) -> PeerQuery:

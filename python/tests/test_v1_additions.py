@@ -459,6 +459,7 @@ def test_facets_accept_every_filter() -> None:
     query = (
         PeerQuery()
         .chain("Mainnet")
+        .network("mainnet")
         .cc("DE")
         .country("JP")
         .region("aws:eu-central-1")

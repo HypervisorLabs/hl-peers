@@ -272,6 +272,7 @@ def envelope_payload(env: Any) -> Dict[str, Any]:
         "generated_at": env.generated_at,
         "next_sweep_at": env.next_sweep_at,
         "attribution": env.attribution,
+        "network": env.network,
     }
 
 
@@ -281,6 +282,7 @@ def map_envelope_payload(result: Any) -> Dict[str, Any]:
         "available": result.available,
         "stale": result.stale,
         "generated_at": result.generated_at,
+        "network": result.network,
     }
 
 
@@ -291,8 +293,9 @@ def signals(peers: Any) -> List[List[Any]]:
 
 
 def rows(peers: Any) -> List[List[Any]]:
-    """1.1.0: ``[[id, state, tier, city], ...]`` in peer order."""
-    return [[p.id, p.state, p.tier, p.city] for p in peers]
+    """``[[id, state, tier, city, version], ...]`` in peer order (``version``
+    since the testnet beta)."""
+    return [[p.id, p.state, p.tier, p.city, p.version] for p in peers]
 
 
 def cities_payload(cities: Any) -> Any:
@@ -355,7 +358,8 @@ def run_http(req: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         if op == "get_peer":
-            detail = client.get_peer(req["ip"])
+            # `network` is get_peer's per-call option (CLIENT_SPEC §4.3).
+            detail = client.get_peer(req["ip"], network=req.get("query", {}).get("network"))
             return {
                 "ok": True,
                 "status": detail.status,
@@ -375,6 +379,7 @@ def run_http(req: Dict[str, Any]) -> Dict[str, Any]:
             answer["edges"] = [[e.from_, e.to, e.span] for e in graph.edges]
             answer["truncated"] = graph.truncated
             answer["node_cities"] = [n.city for n in graph.nodes]
+            answer["node_versions"] = [n.version for n in graph.nodes]
             answer["cities"] = cities_payload(graph.cities)
             answer["attribution"] = graph.attribution
             return answer

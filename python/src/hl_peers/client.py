@@ -58,7 +58,7 @@ from .models import (
     RateLimit,
     utcnow,
 )
-from .query import FACET_REFUSED_PARAMS, PeerQuery
+from .query import FACET_REFUSED_PARAMS, Network, PeerQuery, check_network
 from .transport import HttpResponse, Transport, UrllibTransport
 
 __all__ = ["PeerApiClient", "PeerIterator"]
@@ -106,6 +106,7 @@ class PeerApiClient:
         clock: Callable[[], datetime] = utcnow,
         suppress_placeholder_warning: bool = False,
         env: Optional[Mapping[str, str]] = None,
+        network: Optional[Network] = None,
     ) -> None:
         environ = env if env is not None else os.environ
         self.base_url = base_url or environ.get("HL_PEER_API_BASE_URL") or DEFAULT_BASE_URL
@@ -124,6 +125,10 @@ class PeerApiClient:
         #: (§5.2) and stamps a ``.bak`` file (§6.6), so a test never depends on
         #: wall-clock time.
         self.clock = clock
+        #: The default ``network`` for every call that sets none (CLIENT_SPEC §1,
+        #: §10 D-U). ``None`` sends nothing, so the server's default (mainnet)
+        #: governs; a per-call or per-query value wins.
+        self.network: Optional[Network] = check_network(network)
         del suppress_placeholder_warning  # has no effect
         base_agent = user_agent or USER_AGENT
         self.user_agent = base_agent + (" " + user_agent_suffix if user_agent_suffix else "")
@@ -144,7 +149,7 @@ class PeerApiClient:
         error: the empty ``peers`` list that comes with it is not a finding
         about the network.
         """
-        query = query or PeerQuery()
+        query = self._with_network(query)
         _refuse_gossip_config_format(query)
         raw = self._get(self.base_path + PEERS_PATH, query, if_none_match=if_none_match)
         if isinstance(raw, NotModified):
@@ -209,7 +214,7 @@ class PeerApiClient:
         starts: writing it does not steer a running node, and this library never
         restarts anything.
         """
-        query = (query or PeerQuery()).format("gossip_config")
+        query = self._with_network(query).format("gossip_config")
         raw = self._get(self.base_path + PEERS_PATH, query)
         assert not isinstance(raw, NotModified)
         return decode_gossip_config(raw)
@@ -226,6 +231,7 @@ class PeerApiClient:
         label: MapCsv = None,
         serves_mempool: MapNullableCsv = None,
         auction: MapNullableCsv = None,
+        network: Optional[Network] = None,
     ) -> NetworkMapGraph:
         """``GET <base_path>/network-map/graph`` — nodes, edges and the tier
         histogram. Nodes decode exactly like a ``/peers`` row.
@@ -249,6 +255,7 @@ class PeerApiClient:
             label=label,
             serves_mempool=serves_mempool,
             auction=auction,
+            network=self._network_for(network),
         )
         raw = self._get(self.base_path + NETWORK_MAP_GRAPH_PATH, qs)
         assert not isinstance(raw, NotModified)
@@ -266,6 +273,7 @@ class PeerApiClient:
         label: MapCsv = None,
         serves_mempool: MapNullableCsv = None,
         auction: MapNullableCsv = None,
+        network: Optional[Network] = None,
     ) -> NetworkMapSummary:
         """``GET <base_path>/network-map/summary`` — the graph's counts without
         nodes or edges, plus ``connectable``, ``serves_mempool`` and ``auction``
@@ -281,12 +289,13 @@ class PeerApiClient:
             label=label,
             serves_mempool=serves_mempool,
             auction=auction,
+            network=self._network_for(network),
         )
         raw = self._get(self.base_path + NETWORK_MAP_SUMMARY_PATH, qs)
         assert not isinstance(raw, NotModified)
         return decode_network_map_summary(raw)
 
-    def get_peer(self, ip: str) -> PeerDetail:
+    def get_peer(self, ip: str, *, network: Optional[Network] = None) -> PeerDetail:
         """``GET <base_path>/peers/{ip}``.
 
         🔴 A malformed IPv4 is a ``400`` and a well-formed IPv4 in no source is
@@ -296,7 +305,10 @@ class PeerApiClient:
         _require_query_ipv4(ip)
         from urllib.parse import quote
 
-        raw = self._get(self.base_path + PEERS_PATH + "/" + quote(ip, safe=""), PeerQuery())
+        raw = self._get(
+            self.base_path + PEERS_PATH + "/" + quote(ip, safe=""),
+            PeerQuery().network(self._network_for(network)),
+        )
         assert not isinstance(raw, NotModified)
         return decode_peer_detail(raw)
 
@@ -308,7 +320,7 @@ class PeerApiClient:
         with :class:`~hl_peers.errors.Invalid`: the endpoint does not take
         them, and you would believe they applied.
         """
-        query = query or PeerQuery()
+        query = self._with_network(query)
         _refuse_non_filters(query)
         raw = self._get(self.base_path + FACETS_PATH, query)
         assert not isinstance(raw, NotModified)
@@ -349,6 +361,19 @@ class PeerApiClient:
 
     def _next_poll_delay(self, page: PeerPage, interval: float) -> float:
         return interval if page.next_sweep_at is None else interval + self._poll_jitter
+
+    # -- network (testnet beta, CLIENT_SPEC §10 D-U) ------------------------
+    def _network_for(self, network: Optional[str]) -> Optional[Network]:
+        """A per-call ``network`` wins; else the client default; else unset."""
+        checked = check_network(network)
+        return checked if checked is not None else self.network
+
+    def _with_network(self, query: Optional[PeerQuery]) -> PeerQuery:
+        """The query, with the client's default ``network`` when it sets none."""
+        query = query or PeerQuery()
+        if "network" in query.params or self.network is None:
+            return query
+        return query.network(self.network)
 
     # -- request plumbing --------------------------------------------------
     def _get(

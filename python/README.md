@@ -51,6 +51,7 @@ transport; nothing else changes.
 | `max_retries` | **`0`** | automatic retry is **off**; opt in with e.g. `max_retries=3` |
 | `timeout` | `10.0` s | per attempt |
 | `cache` | in-memory ETag LRU, 64 entries | per client instance, never on disk |
+| `network` | `None` | `"mainnet"` \| `"testnet"` (beta): the default for every call that sets none; `None` sends nothing (mainnet). See [Testnet (beta)](#testnet-beta) |
 
 Every result and every error carries `api_version` — the `API-Version` response
 header, `"1"` today. It is informational: the client never fails on a different
@@ -311,6 +312,76 @@ Options, all optional: `max_tier`, `show_unreached`, `hide_unreachable`,
 accepted), refused locally with `Invalid` when out of enum. `cities` and
 `attribution` are `None` when the producer serves no city positions — distinct
 from an empty list. `available: false` is returned as-is, never as an error.
+`network` (`"mainnet"` | `"testnet"`) is a per-call option on both, see below.
+
+---
+
+## Testnet (beta)
+
+The API serves the testnet peer graph on every route behind an optional
+`network` parameter. Set it per query, per call, or once on the client:
+
+| where | how |
+|---|---|
+| `/peers`, `/peers/facets` | `PeerQuery().network("testnet")` |
+| `get_peer`, `network_map_graph`, `network_map_summary` | `network="testnet"` keyword |
+| every call | `PeerApiClient(network="testnet")`; a per-call value wins |
+
+Unset sends **no** `network` key, so a mainnet request is byte-identical to
+what it was before and the server's default (mainnet) governs. The value is a
+closed, case-sensitive enum: `"Testnet"`, `"TESTNET"` or `"devnet"` raise
+`Invalid` (with `parameter == "network"`) before any request. `network` is not
+`chain`: `network` picks which graph is read, `chain` (`Mainnet` | `Testnet`)
+filters on what the server states, and a testnet body states `chain: "Testnet"`.
+
+List testnet peers and their hardfork versions:
+
+```python
+# runnable: mock
+from hl_peers import PeerApiClient, PeerQuery
+
+client = PeerApiClient(network="testnet")         # every call reads the testnet graph
+page = client.list_peers()
+print(page.network, page.chain)                   # testnet Testnet
+for peer in page.peers:
+    # version: the node's reported hardfork version, an opaque string ("1550"),
+    # or None when the node did not report one. Always None on mainnet.
+    print(peer.id, peer.version, peer.cc, peer.asn, peer.org)
+
+detail = client.get_peer("192.0.2.50")            # the client default applies
+print(detail.peer.version)                        # 1550
+graph = client.network_map_graph()
+print(sorted({n.version for n in graph.nodes if n.version}))
+
+# per query / per call: PeerQuery().network("mainnet"), get_peer(ip, network="mainnet")
+mainnet = PeerApiClient().list_peers(PeerQuery().cc("DE"))  # no network sent at all
+print(mainnet.network)                            # None — every mainnet body
+```
+
+Every result exposes `network`: `"testnet"` on a testnet body, `None` otherwise
+(which means mainnet). Testnet rows carry the same geo/ASN fields as mainnet.
+
+Known gaps while testnet is in beta — the client does nothing special about any
+of them:
+
+- the graph is **small**; expect a handful of peers, not hundreds;
+- there is **no session data yet**, so the session-derived signals stay unknown;
+- `blocks_behind` is **approximate**;
+- testnet **resets**: `available: false` for a while after one is normal, and is
+  returned as-is like any other `available: false`;
+- operator-run nodes may be **omitted** from the testnet graph;
+- a deployment that does not serve testnet answers `400 network-not-served`,
+  raised as `BadRequest` with `parameter == "network"` (no new error class):
+
+```python
+from hl_peers import BadRequest
+
+try:
+    client.list_peers()
+except BadRequest as error:
+    if error.parameter == "network":
+        ...  # testnet is switched off on this deployment
+```
 
 ---
 
@@ -605,7 +676,7 @@ the header as sent.
 | `FilterUnavailable` | `400 …/filter-unavailable` — the attribute is not collected |
 | `ChainNotServed` | `400 …/chain-not-served` |
 | `CursorExpired` | `400 …/cursor-expired` |
-| `BadRequest` | any other `400` (e.g. `filter-removed` for the old `mempool=` filter) — and the **base class** of the three above |
+| `BadRequest` | any other `400` (e.g. `filter-removed` for the old `mempool=` filter, or `network-not-served` with `parameter == "network"`) — and the **base class** of the three above |
 | `Unauthorized` / `NotFound` | `401` / `404` |
 | `Unavailable` | `503`, and an `available: false` envelope in a config-building path |
 | `ServerError` / `TransportError` / `DecodeError` | other `5xx` / connect-read-TLS / bad body |
@@ -621,13 +692,13 @@ and carry the raw `problem` object when the body was problem+json. Discriminatio
 ## CLI
 
 ```
-hl-peers query   [--chain Mainnet] [--cc DE,NL] [--country JP] [--tier 1] [--max-tier 2]
+hl-peers query   [--chain Mainnet] [--network mainnet|testnet] [--cc DE,NL] [--country JP] [--tier 1] [--max-tier 2]
                  [--label sentry] [--accepting] [--state responsive]
                  [--serves-mempool true,null] [--auction holds_slot,bidding]
                  [--sort tier] [--limit 50] [--all] [--max-items 10000]
                  [--format json|gossip-config] [--output json|table|ips]
 hl-peers facets  [any query filter]
-hl-peers peer    <ip>
+hl-peers peer    <ip> [--network mainnet|testnet]
 hl-peers gossip  show|validate      --path ~/override_gossip_config.json
 hl-peers gossip  add-root|remove-root <ip> --path … [--dry-run] [--backup] [--stdout]
 hl-peers gossip  update --path … [query flags] [--max-roots 8]
@@ -639,6 +710,9 @@ hl-peers gossip  update --path … [query flags] [--max-roots 8]
 Global: --base-url URL --api-key KEY --timeout SECS --max-retries N (default 0)
         --no-cache --quiet --verbose --json-errors
 ```
+
+`--network` (`mainnet` | `testnet`, beta) is accepted by `query`, `facets`,
+`peer` and `gossip update`; unset sends nothing (mainnet).
 
 `query --format gossip-config` prints the server-rendered override file in
 canonical form, to stdout; it never writes.

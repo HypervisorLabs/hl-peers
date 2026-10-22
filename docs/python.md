@@ -122,8 +122,8 @@ member, the literal `null`:
 Refused before a request is spent: `seen_within` not matching `^[0-9]+[mhd]$`;
 `min_uptime` outside `[0, 1]`; negative `max_tier` / `max_blocks_behind` /
 `max_latency_ms`; `limit < 1`; `max_latency_ms` without `vantage`; and a value
-outside a **closed** enum (`chain`, `sort`, `format`, `connectable`, `state`,
-`serves_mempool`, `auction`) — case-sensitive.
+outside a **closed** enum (`chain`, `network`, `sort`, `format`, `connectable`,
+`state`, `serves_mempool`, `auction`) — case-sensitive.
 
 Deliberately **not** validated: `cc`, `region`, `asn`, `role`, `label`,
 `version`, `fields`. Those are open sets that may grow additively within v1, and
@@ -132,6 +132,30 @@ client-side error that guesses at it. `limit` is not clamped either: the server
 clamps by tier, and clamping locally would hide that ceiling from you.
 
 No `sort` is sent unless you set one (D-J), so the server's default governs.
+
+### `network` (testnet, beta)
+
+`network` is lower-case and closed (`"mainnet"` | `"testnet"`), so it can never
+be confused with the capitalised `chain` enum. Unset sends no key at all — a
+mainnet URL is exactly what it was before, and hits the same cache key:
+
+```pycon
+>>> PeerQuery().cc("DE").network("testnet").to_query_string()
+'cc=DE&network=testnet'
+>>> PeerQuery().network("Testnet")
+Traceback (most recent call last):
+  ...
+hl_peers.errors.Invalid: ...
+
+```
+
+The same value is a `network=` keyword on `get_peer` and the network map, and a
+client-wide default (`PeerApiClient(network="testnet")`) that applies to every
+call setting none; a per-call or per-query value wins. On a testnet body every
+result's `network` is `"testnet"` and each `Peer.version` is the node's hardfork
+version (opaque string, `None` when not reported); on mainnet both are `None`.
+`400 network-not-served` is a plain `BadRequest` with `parameter == "network"`.
+See the README's *Testnet (beta)* section for the known gaps.
 
 ---
 
@@ -285,7 +309,7 @@ today, and `geo_coverage` is exposed as a plain mapping.
 
 `network_map_graph(**opts)` and `network_map_summary(**opts)` take keyword
 options (`max_tier`, `show_unreached`, `hide_unreachable`, `connectable`, `cc`,
-`operator`, `label`, `serves_mempool` and `auction`, with the
+`operator`, `label`, `serves_mempool`, `auction` and `network`, with the
 builder's closed enums), serialize them like `/peers` (lexicographic, `%2C`) —
 except that the string filters are sent exactly as given, with no upper-casing — and
 share the ETag cache, error mapping and `api_version`/`rate_limit` exposure.
