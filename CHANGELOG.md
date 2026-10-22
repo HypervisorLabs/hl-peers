@@ -7,6 +7,17 @@ versions follow [SemVer](https://semver.org/). Per-package entries are in
 
 ## [Unreleased]
 
+- **Testnet (beta).** All four clients take an optional `network` (`mainnet` |
+  `testnet`) on every route, per call or as a client-wide default; unset sends
+  nothing, so mainnet requests are unchanged. Envelopes decode `network`;
+  testnet rows carry `version` (the node's hardfork version) and the same
+  geo/ASN fields as mainnet. `400 network-not-served` is a `BadRequest` with
+  `parameter: "network"`. The CLIs take `--network`. Known gaps are listed in
+  `docs/concepts.md` ("Networks").
+- Contract: `CLIENT_SPEC.md` §10 D-U, the `Network` parameter in
+  `spec/peer-api-v1.openapi.yaml`, six testnet fixtures (`*_testnet`,
+  `error_400_network_not_served`) and the matching `tools/cross_check`
+  programmes. No version bump; packages stay at 1.1.0.
 - TypeScript example `typescript/examples/05-peer-management.ts`: the Peer API as
   part of your own peer management (scheduled candidate refresh, per-ASN and
   per-country diversity, checking the roots already in your file, one-at-a-time

@@ -87,6 +87,7 @@ pulls in `node:fs` (`CLIENT_SPEC.md` §6.1). Elixir's `save/3` is on
 | never include | `exclude:` | `exclude` | `with_exclude` | `exclude=` |
 | 🔴 permission bits | `file_mode:` | `fileMode` | `with_file_mode` | `file_mode=` |
 | pagination guard | `max_items:` | `maxItems` | `IterOpts::max_items` | `max_items=` |
+| network (testnet, beta) | `network:` (query field, `get_peer/3` opt, map filter, `Client.new` default) | `network` (`peerQuery().network()`, `getPeer`/map option, client option) | `PeerQuery::network`, `GetPeerOpts`, `NetworkMapOpts::network`, `ClientBuilder::network` | `network=` (`PeerQuery.network()`, call kwarg, client kwarg) |
 
 🔴 **`file_mode`, never `mode`** (`CLIENT_SPEC.md` §6.6): `mode` is the merge
 strategy and nothing else. The two would collide the moment

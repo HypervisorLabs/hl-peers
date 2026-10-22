@@ -108,6 +108,42 @@ raise `FilterUnavailable` — never an empty list. Both filters work on
   `attribution`, and every peer carries `city` (its cluster id, or `null`). No
   per-peer coordinate is ever published.
 
+### Testnet (beta)
+
+Every route takes an optional `network`: `mainnet` (the default) or `testnet`.
+Leave it unset and nothing changes: no `network` key is sent and the request is
+byte-identical to before. Set it per call, or once on the client as a default
+(`network="testnet"` in Python, `network: "testnet"` in TypeScript,
+`network: :testnet` in Elixir, `.network(Network::Testnet)` in Rust; each
+README has the exact spelling).
+
+A testnet response has the same shape as a mainnet one, adds
+`"network": "testnet"` and states `chain: "Testnet"`. Each testnet row carries
+**`version`, the node's reported hardfork version** (for example `"1550"`;
+`null` on mainnet), and the same geo/ASN profile as mainnet rows (`cc`,
+`cc_confidence`, `cc_source`, `region`, `asn`, `org`). No operator labels and no
+mempool or auction signals on testnet.
+
+List testnet peers and their hardfork versions (Python; every client README has
+the same example):
+
+```python
+from hl_peers import PeerApiClient, PeerQuery
+
+client = PeerApiClient(network="testnet")
+page = client.list_peers(PeerQuery())
+for p in page.peers:
+    print(p.id, p.version, p.cc, p.org)
+```
+
+🧪 **Beta, known gaps:** the testnet graph is small (a few dozen nodes, most of
+which report few or no children); there is no session data yet;
+`blocks_behind` is approximate; operator-run nodes may be omitted; testnet is
+reset and upgraded often, so peers age out and a reset can leave the graph
+`available: false` for a while. A deployment that does not serve testnet answers
+`400 network-not-served`, which the clients raise as `BadRequest` with
+`parameter == "network"` (`CLIENT_SPEC.md` §10 D-U) — never a mainnet answer.
+
 ---
 
 ## Rate limits and tiers
