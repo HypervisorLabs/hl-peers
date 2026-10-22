@@ -219,10 +219,18 @@ A testnet response has the same shape as a mainnet one, adds
 filled in:
 
 - **Same:** the graph (`nodes`, `edges`, tiers), `state`, `in_deg` / `out_deg` /
-  `feeders`, heights and `blocks_behind`, `live`, `uptime`, `last_seen`.
-- **Not on testnet:** operator labels, the `mempool` and `auction` signals
-  (always the unknown shape), and geography. A filter on one of those answers
+  `feeders`, heights and `blocks_behind`, `live`, `uptime`, `last_seen`, and the
+  geo/ASN profile (`cc`, `cc_confidence`, `cc_source`, `region`, `asn`, `org`),
+  from the same offline sources as mainnet.
+- **Testnet only:** `version` is the node's reported **hardfork version**
+  (for example `"1550"`), so you can see who has upgraded. On mainnet `version`
+  stays `null`.
+- **Not on testnet:** operator labels and the `mempool` and `auction` signals
+  (always the unknown shape). A filter on one of those answers
   `filter-unavailable`, as on mainnet when a facet is dark.
+- **Beta, known gaps:** the testnet graph is small (a few dozen nodes, most of
+  which report few or no children); there is no session data yet;
+  `blocks_behind` is approximate; operator-run nodes may be omitted.
 - **Churn:** testnet is reset and upgraded often. Peers age out rather than
   persist, and a reset can empty the graph for a while (`available: false`).
 
