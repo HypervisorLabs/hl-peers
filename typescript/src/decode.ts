@@ -96,6 +96,7 @@ export const ENVELOPE_FIELDS = Object.freeze([
   'available',
   'stale',
   'chain',
+  'network',
   'generated_at',
   'next_sweep_at',
   'attribution',
@@ -164,6 +165,7 @@ export function decodeEnvelope(body: Record<string, unknown>): Envelope {
     available: bool(body['available']) ?? true,
     stale: bool(body['stale']) ?? false,
     chain: str(body['chain']) as Chain | null,
+    network: str(body['network']),
     generated_at: str(body['generated_at']),
     next_sweep_at: str(body['next_sweep_at']),
     attribution: str(body['attribution']),
@@ -176,6 +178,7 @@ export function decodeNetworkMapEnvelope(body: Record<string, unknown>): Network
     version: str(body['version']) ?? 'v1',
     available: bool(body['available']) ?? true,
     stale: bool(body['stale']) ?? false,
+    network: str(body['network']),
     generated_at: str(body['generated_at']),
   };
 }

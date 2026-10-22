@@ -7,6 +7,7 @@ import type {
   AuctionStatus,
   Chain,
   Connectable,
+  Network,
   PeerState,
   ResponseFormat,
   SortKey,
@@ -27,6 +28,7 @@ export type CsvInput = string | readonly string[];
 /** The raw parameter bag behind a {@link PeerQuery}. */
 export interface PeerQueryState {
   chain?: Chain;
+  network?: Network;
   cc?: CsvInput;
   region?: CsvInput;
   asn?: CsvInput;
@@ -59,6 +61,7 @@ const SEEN_WITHIN = /^[0-9]+[mhd]$/;
 /** The closed enums of §2.2(5) — the only sets validated client-side. */
 const CLOSED_ENUMS = {
   chain: ['Mainnet', 'Testnet'],
+  network: ['mainnet', 'testnet'],
   sort: ['tier', 'blocks_behind', 'out_deg', 'last_seen', 'random'],
   format: ['json', 'gossip_config'],
   connectable: ['yes', 'no', 'unknown'],
@@ -66,6 +69,24 @@ const CLOSED_ENUMS = {
   serves_mempool: ['true', 'false', 'null'],
   auction: ['holds_slot', 'bidding', 'bid_before', 'null'],
 } as const;
+
+/**
+ * Validate a `network` value against its closed, case-sensitive enum
+ * (CLIENT_SPEC §2.2(5), §10 D-U). Shared by the builder, `getPeer`, the
+ * network-map options and the client-level default.
+ * @internal
+ */
+export function checkNetwork(value: unknown): Network | undefined {
+  if (value === undefined) return undefined;
+  const allowed: readonly string[] = CLOSED_ENUMS.network;
+  if (typeof value !== 'string' || !allowed.includes(value)) {
+    throw new InvalidError(
+      'network',
+      `${JSON.stringify(value)} is not a member of the closed enum [${allowed.join(', ')}]`,
+    );
+  }
+  return value as Network;
+}
 
 /** A list whose members may be `null`/booleans, as its wire CSV. */
 function nullableCsv(value: readonly (string | number | boolean | null)[] | string): string {
@@ -144,6 +165,18 @@ export class PeerQuery {
   /** 🪤 Only `Mainnet` is served today; `Testnet` is an explicit 400. */
   chain(chain: Chain): PeerQuery {
     return this.with({ chain });
+  }
+
+  /**
+   * Which network's graph to read: `mainnet` | `testnet` (lower-case, closed,
+   * case-sensitive). Unset sends nothing, so the client's `network` option
+   * applies, else the server's default (mainnet). Not the same question as
+   * {@link PeerQuery.chain}, which filters on what the server states.
+   *
+   * 🪤 `testnet` is **beta** (see {@link Network}).
+   */
+  network(network: Network): PeerQuery {
+    return this.with({ network });
   }
 
   /**
@@ -277,7 +310,10 @@ export class PeerQuery {
     return this.with({ seen_within: value });
   }
 
-  /** 🪤 Not published today. */
+  /**
+   * 🪤 Not published on mainnet. On `network("testnet")` (beta) a peer's
+   * `version` is its reported hardfork version, e.g. `"1550"`.
+   */
   version(version: CsvInput): PeerQuery {
     return this.with({ version });
   }
@@ -343,7 +379,7 @@ export class PeerQuery {
       const raw = (s as Record<string, unknown>)[key];
       if (raw === undefined) continue;
       const values =
-        key === 'chain' || key === 'sort' || key === 'format'
+        key === 'chain' || key === 'network' || key === 'sort' || key === 'format'
           ? [typeof raw === 'string' ? raw : JSON.stringify(raw)]
           : typeof raw === 'string'
             ? members(raw)
@@ -380,6 +416,7 @@ export class PeerQuery {
     };
 
     put('chain', s.chain);
+    put('network', s.network);
     putCsv('cc', s.cc, true);
     putCsv('region', s.region);
     putCsv('asn', s.asn);

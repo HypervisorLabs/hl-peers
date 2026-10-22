@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- **Testnet (beta), `network`** (CLIENT_SPEC §10 D-U): a closed
+  `'mainnet' | 'testnet'` option (new `Network` type). Builder field
+  `peerQuery().network(…)` on `listPeers` / `iterPeers` / `facets` /
+  `listPeersAsGossipConfig`; per-call option on `getPeer` and
+  `networkMapGraph` / `networkMapSummary`; client-level default
+  `new PeerApiClient({ network })`, where a per-call value wins. Unset sends
+  nothing, so mainnet requests are byte-identical to 1.1.0. An out-of-enum value
+  is `InvalidError` with `parameter: "network"` before any request.
+- Every envelope (`Envelope`, `NetworkMapEnvelope`) decodes `network`
+  (`"testnet"` or `null`). `Peer.version` is documented as the hardfork version
+  on testnet (`null` on mainnet).
+- `400 network-not-served` is the existing `BadRequestError` with
+  `parameter === "network"`; no new error class.
+- CLI: `--network mainnet|testnet` on `query`, `facets`, `peer` and
+  `gossip update`.
+- `examples/06-testnet.ts`: list testnet peers and their hardfork versions.
 - `examples/05-peer-management.ts`: candidate refresh, diversity, root checks,
   one-at-a-time rotation with a floor and backup, poll timing. Example only; no
   API change.

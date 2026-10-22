@@ -19,6 +19,7 @@ import * as ownerQueries from '../examples/02-owner-queries.ts';
 import * as gossipRecipes from '../examples/03-gossip-recipes.ts';
 import * as errors from '../examples/04-errors.ts';
 import * as peerMgmt from '../examples/05-peer-management.ts';
+import * as testnet from '../examples/06-testnet.ts';
 import { TEST_BASE_URL, fixtureFetch } from './fixture-fetch.ts';
 
 const MINIMAL =
@@ -200,4 +201,20 @@ test('example 05: peer management', async () => {
   }
   assert.equal(peerMgmt.nextPollDelayMs({ error: new Error('x'), attempt: 2 }, now, () => 0), 120_000);
   assert.equal(peerMgmt.nextPollDelayMs({ error: new Error('x'), attempt: 9 }, now, () => 0), 900_000);
+});
+
+test('example 06: testnet (beta) peers and their hardfork versions', async () => {
+  const opts = { baseUrl: TEST_BASE_URL, fetch: fixtureFetch(), env: {} };
+  assert.deepEqual(await testnet.run(opts), [
+    'network=testnet chain=Testnet',
+    '192.0.2.50 version=1550 cc=JP asn=AS64502',
+    '198.51.100.60 version=1550 cc=US asn=AS64503',
+    '203.0.113.70 version=1549 cc=FI asn=AS64500',
+    '203.0.113.71 version=unreported cc=- asn=-',
+  ]);
+  assert.deepEqual(
+    await testnet.run({ ...opts, fetch: fixtureFetch({ scenario: 'network-not-served' }) }),
+    ['testnet is not served by this deployment'],
+  );
+  assert.deepEqual(await testnet.viaClientDefault(opts), ['192.0.2.50 version=1550']);
 });

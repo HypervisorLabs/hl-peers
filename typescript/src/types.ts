@@ -11,6 +11,20 @@ import type { GossipConfig } from './gossip.ts';
 export type Chain = 'Mainnet' | 'Testnet';
 
 /**
+ * Which network's peer graph to read: the `network` query parameter
+ * (CLIENT_SPEC §2.1, §10 D-U). Lower-case and case-sensitive, so it never
+ * blurs with the capitalised {@link Chain}. Unset sends nothing, and the
+ * server answers for mainnet.
+ *
+ * 🪤 `testnet` is **beta**: a small graph, no session data yet, an approximate
+ * `blocks_behind`, and testnet resets mean `available: false` for a while is
+ * normal. A deployment that does not serve testnet answers `400
+ * network-not-served`, raised as {@link BadRequestError} with
+ * `parameter === "network"`.
+ */
+export type Network = 'mainnet' | 'testnet';
+
+/**
  * 🪤 Three-state **strings** on the wire — `"yes"` / `"no"` / `"unknown"`, never
  * booleans — and an ESTIMATE of whether the peer has room for another inbound
  * peer, not a guarantee. `unknown` is not `no`.
@@ -138,7 +152,12 @@ export interface Peer {
   readonly last_seen: string | null;
   /** Observed availability, a number in `[0, 1]`. `null` = not computed. */
   readonly uptime: number | null;
-  /** **Always `null` today** (not published, upstream D-9). */
+  /**
+   * On mainnet **always `null`** (not published, upstream D-9). On
+   * `network: "testnet"` (beta) the node's reported **hardfork version**, e.g.
+   * `"1550"`, or `null` when the node did not report one. An opaque string,
+   * never a number.
+   */
   readonly version: string | null;
   /** Mempool service. 🔴 All-`null` = unknown; `serves: null` is never `false`. */
   readonly mempool: PeerMempool;
@@ -160,6 +179,12 @@ export interface Envelope {
   readonly available: boolean;
   readonly stale: boolean;
   readonly chain: Chain | null;
+  /**
+   * The body's `network`: `"testnet"` on a `network=testnet` answer, `null`
+   * when absent — every mainnet body. Decoded as an open string. A testnet body
+   * also states `chain: "Testnet"`.
+   */
+  readonly network: string | null;
   readonly generated_at: string | null;
   /** When the data is next refreshed; {@link PeerApiClient.pollPeers} aligns to it. */
   readonly next_sweep_at: string | null;
@@ -298,6 +323,8 @@ export interface NetworkMapEnvelope {
   /** 🔴 `false` = the producer could not build a graph. Returned as-is, never an error. */
   readonly available: boolean;
   readonly stale: boolean;
+  /** `"testnet"` on a `network=testnet` answer; `null` when absent (mainnet). */
+  readonly network: string | null;
   readonly generated_at: string | null;
 }
 

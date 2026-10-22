@@ -1008,6 +1008,204 @@ test('an HTTP-date Retry-After is honoured as a delay, not raised on', async () 
   assert.deepEqual(sleeps, [60_000, 60_000, 60_000], '60 s from the date, under the cap');
 });
 
+// -- network=testnet (beta), CLIENT_SPEC §10 D-U ------------------------------
+
+/** `[id, version, cc, asn, org, region]` of the four testnet rows. */
+const TESTNET_ROWS = [
+  ['192.0.2.50', '1550', 'JP', 'AS64502', 'Example Cloud', 'aws:ap-northeast-1'],
+  ['198.51.100.60', '1550', 'US', 'AS64503', 'Example Hosting US', null],
+  ['203.0.113.70', '1549', 'FI', 'AS64500', 'Example Hosting', null],
+  ['203.0.113.71', null, null, null, null, null],
+];
+
+function rowsOf(peers: readonly { id: string; version: string | null; cc: string | null; asn: string | null; org: string | null; region: string | null }[]): unknown[] {
+  return peers.map((p) => [p.id, p.version, p.cc, p.asn, p.org, p.region]);
+}
+
+test('testnet: listPeers sends network=testnet and decodes network, chain, version and geo', async () => {
+  const calls: string[] = [];
+  const res = page(await client({ calls }).listPeers(peerQuery().network('testnet')));
+  assert.deepEqual(calls, ['/peers?network=testnet']);
+  assert.equal(res.envelope.network, 'testnet');
+  assert.equal(res.envelope.chain, 'Testnet');
+  assert.equal(res.envelope.available, true);
+  assert.deepEqual(rowsOf(res.peers), TESTNET_ROWS);
+  // a hardfork version is an opaque string, never a number
+  assert.equal(typeof res.peers[0]?.version, 'string');
+  assert.equal(res.peers[0]?.cc_confidence, 'high');
+  assert.equal(res.peers[0]?.cc_source, 'cloud-range');
+  assert.equal(res.peers[3]?.state, 'listening');
+  assert.equal(res.peers[3]?.tier, null);
+});
+
+test('testnet: iterPeers carries network on every page', async () => {
+  const calls: string[] = [];
+  const peers = await client({ calls }).listAllPeers(peerQuery().network('testnet'));
+  assert.deepEqual(calls, ['/peers?network=testnet']);
+  assert.equal(peers.length, 4);
+});
+
+test('testnet: getPeer takes network as a per-call option', async () => {
+  const calls: string[] = [];
+  const res = await client({ calls }).getPeer('192.0.2.50', { network: 'testnet' });
+  assert.ok(!('notModified' in res));
+  assert.deepEqual(calls, ['/peers/192.0.2.50?network=testnet']);
+  assert.equal(res.envelope.network, 'testnet');
+  assert.equal(res.envelope.chain, 'Testnet');
+  assert.deepEqual(rowsOf([res.peer]), [TESTNET_ROWS[0]]);
+});
+
+test('testnet: facets accepts network as a filter and decodes the version facet', async () => {
+  const calls: string[] = [];
+  const res = await client({ calls }).facets(peerQuery().network('testnet'));
+  assert.ok(!('notModified' in res));
+  assert.deepEqual(calls, ['/peers/facets?network=testnet']);
+  assert.equal(res.envelope.network, 'testnet');
+  assert.equal(res.envelope.chain, 'Testnet');
+  assert.deepEqual(
+    res.facets['version']?.values.map((v) => [v.value, v.count]),
+    [['1550', 2], ['1549', 1], ['null', 1]],
+  );
+  assert.equal(res.isAvailable('label'), false);
+});
+
+test('testnet: the network map takes network as an option and decodes versions', async () => {
+  const calls: string[] = [];
+  const c = client({ calls });
+  const graph = await c.networkMapGraph({ network: 'testnet' });
+  assert.ok(!('notModified' in graph));
+  assert.equal(graph.envelope.network, 'testnet');
+  assert.deepEqual(rowsOf(graph.nodes), TESTNET_ROWS);
+  assert.equal(graph.cities, null);
+  const summary = await c.networkMapSummary({ network: 'testnet' });
+  assert.ok(!('notModified' in summary));
+  assert.equal(summary.envelope.network, 'testnet');
+  assert.equal(summary.nodeCount, 4);
+  assert.deepEqual(calls, ['/network-map/graph?network=testnet', '/network-map/summary?network=testnet']);
+});
+
+test('testnet: network-not-served is a BadRequest with parameter "network", not a new error', async () => {
+  await assert.rejects(
+    client({ scenario: 'network-not-served' }).listPeers(peerQuery().network('testnet')),
+    (err: unknown) => {
+      assert.ok(err instanceof BadRequestError);
+      assert.equal(err.kind, 'BadRequest');
+      assert.equal(err.parameter, 'network');
+      assert.deepEqual([...(err.allowed ?? [])], ['mainnet', 'testnet']);
+      return true;
+    },
+  );
+});
+
+test('testnet: an out-of-enum network is Invalid before any request, on every route', async () => {
+  for (const bad of ['Testnet', 'TESTNET', 'devnet', '']) {
+    const calls: string[] = [];
+    const c = client({ calls });
+    const isInvalid = (err: unknown): boolean =>
+      err instanceof InvalidError && err.parameter === 'network';
+    await assert.rejects(c.listPeers(peerQuery().network(bad as never)), isInvalid);
+    await assert.rejects(c.listAllPeers(peerQuery().network(bad as never)), isInvalid);
+    await assert.rejects(c.facets(peerQuery().network(bad as never)), isInvalid);
+    await assert.rejects(c.listPeersAsGossipConfig(peerQuery().network(bad as never)), isInvalid);
+    await assert.rejects(c.getPeer('192.0.2.50', { network: bad as never }), isInvalid);
+    await assert.rejects(c.networkMapGraph({ network: bad as never }), isInvalid);
+    await assert.rejects(c.networkMapSummary({ network: bad as never }), isInvalid);
+    assert.deepEqual(calls, [], `${JSON.stringify(bad)} reached the wire`);
+    assert.throws(
+      () => client({}, { network: bad as never }),
+      (err: unknown) => err instanceof InvalidError && err.parameter === 'network',
+    );
+  }
+});
+
+test('testnet: the client-level default applies to every route, and a per-call value wins', async () => {
+  const calls: string[] = [];
+  const c = client({ calls }, { network: 'testnet' });
+  assert.equal(c.network, 'testnet');
+  const res = page(await c.listPeers());
+  assert.equal(res.envelope.network, 'testnet');
+  await c.getPeer('192.0.2.50');
+  await c.facets();
+  await c.networkMapGraph();
+  await c.networkMapSummary();
+  assert.equal((await c.listAllPeers()).length, 4);
+  // no testnet gossip_config fixture: only the URL matters here
+  await c.listPeersAsGossipConfig().catch(() => undefined);
+  assert.deepEqual(calls, [
+    '/peers?network=testnet',
+    '/peers/192.0.2.50?network=testnet',
+    '/peers/facets?network=testnet',
+    '/network-map/graph?network=testnet',
+    '/network-map/summary?network=testnet',
+    '/peers?network=testnet',
+    '/peers?format=gossip_config&network=testnet',
+  ]);
+
+  // per-call override back to mainnet: sent explicitly, as the caller wrote it
+  calls.length = 0;
+  await c.listPeers(peerQuery().network('mainnet')).catch(() => undefined);
+  await c.getPeer('192.0.2.10', { network: 'mainnet' }).catch(() => undefined);
+  await c.facets(peerQuery().network('mainnet')).catch(() => undefined);
+  await c.networkMapGraph({ network: 'mainnet' }).catch(() => undefined);
+  await c.networkMapSummary({ network: 'mainnet' }).catch(() => undefined);
+  assert.deepEqual(calls, [
+    '/peers?network=mainnet',
+    '/peers/192.0.2.10?network=mainnet',
+    '/peers/facets?network=mainnet',
+    '/network-map/graph?network=mainnet',
+    '/network-map/summary?network=mainnet',
+  ]);
+
+  // and the reverse: a mainnet-default client asked for testnet per call
+  const calls2: string[] = [];
+  const m = client({ calls: calls2 }, { network: 'mainnet' });
+  const t = page(await m.listPeers(peerQuery().network('testnet')));
+  assert.equal(t.envelope.network, 'testnet');
+  assert.deepEqual(calls2, ['/peers?network=testnet']);
+
+  // an explicit `network: null` is the same as unset
+  assert.equal(client({}, { network: null }).network, null);
+});
+
+test('testnet: network sorts lexicographically among the other parameters', () => {
+  assert.equal(
+    peerQuery().version(['1550']).network('testnet').cc(['jp']).maxTier(1).toQueryString(),
+    'cc=JP&max_tier=1&network=testnet&version=1550',
+  );
+  assert.equal(
+    networkMapQueryString({ operator: 'x', network: 'testnet', maxTier: 1, label: 'sentry' }),
+    'label=sentry&max_tier=1&network=testnet&operator=x',
+  );
+});
+
+test('🔴 mainnet golden: with network unset, no route sends a network key', async () => {
+  const calls: string[] = [];
+  const c = client({ calls });
+  assert.equal(c.network, null);
+  page(await c.listPeers());
+  page(await c.listPeers(peerQuery().cc(['DE'])));
+  await c.listAllPeers(peerQuery().limit(2).sort('tier'));
+  await c.getPeer('192.0.2.10');
+  await c.facets();
+  await c.listPeersAsGossipConfig(peerQuery().cc(['DE']));
+  await c.networkMapGraph({ maxTier: 2 });
+  await c.networkMapSummary();
+  assert.deepEqual(calls, [
+    '/peers',
+    '/peers?cc=DE',
+    '/peers?limit=2&sort=tier',
+    '/peers?cursor=cursor-page-2&limit=2&sort=tier',
+    '/peers?cursor=cursor-page-3&limit=2&sort=tier',
+    '/peers/192.0.2.10',
+    '/peers/facets',
+    '/peers?cc=DE&format=gossip_config',
+    '/network-map/graph?max_tier=2',
+    '/network-map/summary',
+  ]);
+  const res = page(await c.listPeers(peerQuery().cc(['DE'])));
+  assert.equal(res.envelope.network, null, 'a mainnet body has no network: null');
+});
+
 test('every http fixture is reachable through the injected fetch', () => {
   // A guard against a fixture being added upstream that no test exercises.
   const names = new Set(
@@ -1050,9 +1248,15 @@ test('every http fixture is reachable through the injected fetch', () => {
       'network_map_graph_mempool_auction',
       'peers_state_listening',
       'error_429_ip_flood',
+      'peers_testnet',
+      'peer_found_testnet',
+      'facets_testnet',
+      'network_map_graph_testnet',
+      'network_map_summary_testnet',
+      'error_400_network_not_served',
     ].map((n) => n),
   );
-  assert.equal(names.size, 38, 'the fixture set is 38 cases; update the tests if it grows');
+  assert.equal(names.size, 44, 'the fixture set is 44 cases; update the tests if it grows');
   for (const fx of loadHttpFixtures()) {
     assert.equal(fx.response.headers?.['API-Version'], '1', `${fx.name} carries API-Version`);
   }

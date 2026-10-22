@@ -149,6 +149,7 @@ test('the documented client options are the ones the client accepts', () => {
     'logger',
     'suppressPlaceholderWarning',
     'env',
+    'network',
   ]);
   const text = readFileSync(join(HERE, '..', '..', 'docs', 'typescript.md'), 'utf8');
   const block = blocks(text).find((b) => b.includes('new PeerApiClient({'));

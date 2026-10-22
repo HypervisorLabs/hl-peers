@@ -24,15 +24,17 @@ import type { Peer } from './types.ts';
 
 const USAGE = `hl-peers — query the Hyperliquid Peer API and maintain override_gossip_config.json
 
-  hl-peers query   [--chain Mainnet|Testnet] [filter flags] [--all]
+  hl-peers query   [--chain Mainnet|Testnet] [--network mainnet|testnet]
+                   [filter flags] [--all]
                    [--format json|gossip-config] [--output json|table|ips]
-  hl-peers facets  [--chain …] [filter flags]
-  hl-peers peer <ip>
+  hl-peers facets  [--chain …] [--network …] [filter flags]
+  hl-peers peer <ip> [--network mainnet|testnet]
   hl-peers gossip show     --path ~/override_gossip_config.json
   hl-peers gossip validate --path …
   hl-peers gossip update   --path … [filter flags] [--max-roots 8]
                            [--mode replace|append|prepend] [--no-dedupe]
                            [--keep IPs] [--exclude IPs] [--chain Mainnet]
+                           [--network mainnet|testnet]
                            [--try-new-peers|--no-try-new-peers] [--n-gossip-peers 20]
                            [--file-mode 0600] [--backup] [--dry-run] [--stdout]
 
@@ -41,6 +43,8 @@ Filters: --cc --country --region --asn --tier --max-tier --role --label
          --serves-mempool true,false,null --auction holds_slot,bidding,bid_before,null
          --max-blocks-behind --min-uptime --max-latency-ms --vantage
          --seen-within --version --sort --limit --max-items --fields --format
+
+Network: --network mainnet|testnet (unset sends nothing: mainnet; testnet is beta)
 
 Global:  --base-url URL --api-key KEY --timeout SECS --max-retries N
          --no-cache --quiet --verbose --json-errors --help
@@ -94,6 +98,7 @@ const OPTIONS = {
   keep: { type: 'string' },
   exclude: { type: 'string' },
   chain: { type: 'string' },
+  network: { type: 'string' },
   'try-new-peers': { type: 'boolean' },
   'no-try-new-peers': { type: 'boolean' },
   'n-gossip-peers': { type: 'string' },
@@ -179,6 +184,9 @@ function buildQuery(v: Values, includeChain = true): PeerQuery {
   if (format !== undefined) q = q.format(format === 'gossip-config' ? 'gossip_config' : (format as never));
   const chain = str(v.chain);
   if (includeChain && chain !== undefined) q = q.chain(chain as never);
+  // Passed as typed; the builder refuses anything but mainnet|testnet.
+  const network = str(v.network);
+  if (network !== undefined) q = q.network(network as never);
   return q;
 }
 
@@ -331,7 +339,11 @@ async function runCommand(argv: string[]): Promise<number> {
 
     case 'peer': {
       if (sub === undefined) throw new UsageError('hl-peers peer <ip>');
-      const res = await makeClient(v).getPeer(sub);
+      const network = str(v.network);
+      const res = await makeClient(v).getPeer(
+        sub,
+        network === undefined ? {} : { network: network as never },
+      );
       if ('notModified' in res) return 0;
       process.stdout.write(JSON.stringify(res.peer, null, 2) + '\n');
       return 0;

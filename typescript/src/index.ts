@@ -117,6 +117,7 @@ export type {
   NetworkMapSummaryBase,
   NetworkMapSummaryResult,
   NetworkMapTier,
+  Network,
   PeerAuction,
   PeerMempool,
   Facet,

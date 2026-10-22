@@ -200,6 +200,36 @@ describe('hl-peers CLI', { skip: !hasPython ? 'python3 not available' : false },
     assert.match(country.stderr, /country=JP/);
   });
 
+  it('--network testnet reaches query, peer, facets and gossip update; a bad value exits 1', () => {
+    const q = hlPeers(['query', '--network', 'testnet', '--base-url', base, '--output', 'ips']);
+    assert.equal(q.code, 0, q.stderr);
+    assert.deepEqual(q.stdout.trim().split('\n'), [
+      '192.0.2.50', '198.51.100.60', '203.0.113.70', '203.0.113.71',
+    ]);
+
+    const peer = hlPeers(['peer', '192.0.2.50', '--network', 'testnet', '--base-url', base]);
+    assert.equal(peer.code, 0, peer.stderr);
+    assert.match(peer.stdout, /"version": "1550"/);
+
+    const facets = hlPeers(['facets', '--network', 'testnet', '--base-url', base]);
+    assert.equal(facets.code, 0, facets.stderr);
+    assert.match(facets.stdout, /"1549"/);
+
+    // the fresh config takes its chain from the testnet body (chain: Testnet)
+    const update = hlPeers(['gossip', 'update', '--network', 'testnet', '--base-url', base, '--stdout']);
+    assert.equal(update.code, 0, update.stderr);
+    assert.match(update.stdout, /"chain": "Testnet"/);
+    assert.match(update.stdout, /192\.0\.2\.50/);
+
+    for (const bad of ['Testnet', 'devnet']) {
+      const run = hlPeers(['query', '--network', bad, '--base-url', base, '--json-errors']);
+      assert.equal(run.code, 1);
+      assert.equal((JSON.parse(run.stderr.trim()) as { kind: string }).kind, 'Invalid');
+      const p = hlPeers(['peer', '192.0.2.50', '--network', bad, '--base-url', base, '--json-errors']);
+      assert.equal(p.code, 1);
+    }
+  });
+
   it('query --format gossip-config prints the canonical config', () => {
     const run = hlPeers(['query', '--cc', 'DE', '--format', 'gossip-config', '--base-url', base]);
     assert.equal(run.code, 0, run.stderr);

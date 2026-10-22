@@ -69,6 +69,7 @@ new PeerApiClient({
   userAgent, userAgentSuffix, // default user agent: hl-peers-ts/1.1.0
   fetch, now, random, sleep,  // all injectable, for tests and runtimes
   env,                     // defaults to process.env where one exists
+  network,                 // 'mainnet' | 'testnet' default for every call; unset sends nothing
 });
 ```
 
@@ -92,6 +93,16 @@ network map: <https://hypervisor.gg/network>.
 | `networkMapGraph(options?, opts?)` | `/network-map/graph`: `nodes` (as `Peer`), `edges`, `tiers`, counts, `cities` / `attribution` (null when absent) |
 | `networkMapSummary(options?, opts?)` | `/network-map/summary`: counts, `tiers`, `connectable` / `servesMempool` / `auction` buckets, `cities` / `attribution` |
 | `pollPeers(query, intervalMs, cb, opts?)` | conditional polling aligned to `next_sweep_at` |
+
+**Testnet (beta).** `network: 'mainnet' | 'testnet'` (closed, case-sensitive)
+picks which graph is read: a builder field (`peerQuery().network('testnet')`)
+for `listPeers` / `iterPeers` / `facets` / `listPeersAsGossipConfig`, a per-call
+option on `getPeer(ip, { network })` and the network map, and the client-level
+default above; a per-call value wins. Unset sends nothing (mainnet), so a mainnet
+URL is unchanged. Every envelope carries `network` (`'testnet'` or `null`).
+`400 network-not-served` is a `BadRequestError` with `parameter === 'network'`.
+Beta gaps: a small graph, no session data, approximate `blocks_behind`, and
+`available: false` for a while after a testnet reset.
 
 Per-call options: `signal` (AbortSignal), `ifNoneMatch`, `deadlineMs`, and for
 `iterPeers` also `maxItems` (default **10 000**, never unbounded) and
@@ -152,7 +163,8 @@ for the traps each preset keeps visible.
 
 Decoded fields keep the wire's snake_case. Beyond the directory basics, each
 `Peer` carries `cc_confidence`, `cc_source`, `asn`, `org` (open strings),
-`uptime`, `feeders`, `city` (1.1.0: city-cluster id or `null`), and two typed objects: `mempool` (`serves`,
+`uptime`, `feeders`, `city` (1.1.0: city-cluster id or `null`), `version` (the
+hardfork version on testnet, e.g. `'1550'`; always `null` on mainnet), and two typed objects: `mempool` (`serves`,
 `last_checked`, `verdict`, `first_frame_ms`, `source`) and `auction` (`status`,
 `slot`, `since`, `last_bid_at`). All-`null` means unknown; a key the server
 omits decodes to the all-`null` object; unknown top-level keys land in
@@ -167,7 +179,7 @@ omits decodes to the all-`null` object; unknown top-level keys land in
 | `FilterUnavailableError` | `400 …/filter-unavailable` | `FilterUnavailable` |
 | `ChainNotServedError` | `400 …/chain-not-served` | `ChainNotServed` |
 | `CursorExpiredError` | `400 …/cursor-expired` | `CursorExpired` |
-| `BadRequestError` | any other `400` | `BadRequest` |
+| `BadRequestError` | any other `400`, including `network-not-served` (`parameter === 'network'`) | `BadRequest` |
 | `UnauthorizedError` | `401` | `Unauthorized` |
 | `NotFoundError` | `404`, and a missing local config file | `NotFound` |
 | `UnavailableError` | `503`, and `available:false` in a config path | `Unavailable` |
@@ -260,8 +272,10 @@ npm run check    # typecheck + lint + test + build
 - `test/conformance.test.ts` — **one generic runner** over all **76** cases in
   `fixtures/gossip/cases`, byte-exact, `$TMPDIR` substituted per case, with the
   warning set taken from a final `validate()` as `fixtures/README.md` requires.
-- `test/http.test.ts` — all **38** fixtures: every endpoint incl. the network
-  map, the four (single-page) common queries plus "mempool and DE"
+- `test/http.test.ts` — all **44** fixtures: every endpoint incl. the network
+  map, the six testnet (beta) cases (`network=testnet` on every route, the
+  client default and its override, `network-not-served`, and a mainnet golden
+  with no `network` key on any route), the four (single-page) common queries plus "mempool and DE"
   (`serves_mempool=true&cc=DE`), `serves_mempool=null`, `auction=holds_slot,bidding`,
   the `format=gossip_config` **golden** (`toJson()` and saved bytes),
   `filter-removed` and mempool `filter-unavailable`, `API-Version`, retries off

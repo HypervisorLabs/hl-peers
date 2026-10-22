@@ -44,6 +44,7 @@ import { GossipConfig } from './gossip.ts';
 import { isIpv4, looksLikeIpv6 } from './ipv4.ts';
 import {
   PeerQuery,
+  checkNetwork,
   closedNullableCsv,
   encodeRfc3986,
   type AuctionMember,
@@ -55,6 +56,7 @@ import type {
   Problem,
   FacetsResult,
   GossipConfigResult,
+  Network,
   NetworkMapGraphResult,
   NetworkMapSummaryBase,
   NetworkMapSummaryResult,
@@ -161,6 +163,17 @@ export interface PeerApiClientOptions {
   suppressPlaceholderWarning?: boolean;
   /** Environment source; defaults to `process.env` where one exists. */
   env?: Record<string, string | undefined>;
+  /**
+   * The default `network` for every call that does not set its own
+   * (CLIENT_SPEC §1, §10 D-U); a per-call value wins. Default `undefined`:
+   * nothing is sent, so the server's default (mainnet) governs and a mainnet
+   * request is byte-identical to one from a client without this option.
+   * Validated at construction: anything but `mainnet` | `testnet` is an
+   * {@link InvalidError} with `parameter === "network"`.
+   *
+   * 🪤 `testnet` is **beta** (see {@link Network}).
+   */
+  network?: Network | null;
 }
 
 /** Per-call options. */
@@ -220,6 +233,12 @@ export interface NetworkMapOptions {
    * builder's `servesMempool` — `null` = unknown, **not** `false`.
    */
   servesMempool?: readonly ServesMempoolMember[] | string;
+  /**
+   * Which network's graph to draw: `mainnet` | `testnet` (closed,
+   * case-sensitive). Unset falls back to the client's `network` option, else
+   * nothing is sent (mainnet). 🪤 `testnet` is **beta**.
+   */
+  network?: Network;
   /** Gossip read-priority auction status, as the builder's `auction`. */
   auction?: readonly AuctionMember[] | string;
 }
@@ -254,6 +273,7 @@ export function networkMapQueryString(opts: NetworkMapOptions = {}): string {
   const servesMempool =
     opts.servesMempool === undefined ? undefined : closedNullableCsv('serves_mempool', opts.servesMempool);
   const auction = opts.auction === undefined ? undefined : closedNullableCsv('auction', opts.auction);
+  const network = checkNetwork(opts.network);
   const pairs: [string, string | undefined][] = [
     ['auction', auction],
     ['cc', opts.cc],
@@ -261,6 +281,7 @@ export function networkMapQueryString(opts: NetworkMapOptions = {}): string {
     ['hide_unreachable', opts.hideUnreachable === undefined ? undefined : String(opts.hideUnreachable)],
     ['label', opts.label],
     ['max_tier', opts.maxTier === undefined ? undefined : String(opts.maxTier)],
+    ['network', network],
     ['operator', opts.operator],
     ['serves_mempool', servesMempool],
     ['show_unreached', opts.showUnreached === undefined ? undefined : String(opts.showUnreached)],
@@ -301,6 +322,8 @@ export class PeerApiClient {
   readonly maxRetryAfterMs: number;
   readonly minPollIntervalMs: number;
   readonly cache: EtagCache | null;
+  /** The client-level default `network`; `null` sends nothing (mainnet). */
+  readonly network: Network | null;
 
   private readonly apiKey: string | null;
   private readonly userAgent: string;
@@ -334,6 +357,7 @@ export class PeerApiClient {
     this.maxRetryAfterMs = options.maxRetryAfterMs ?? 60_000;
     this.minPollIntervalMs = options.minPollIntervalMs ?? 60_000;
     this.cache = options.cache === undefined ? new LruEtagCache(64) : options.cache;
+    this.network = checkNetwork(options.network ?? undefined) ?? null;
     const base = options.userAgent ?? `hl-peers-ts/${VERSION}`;
     this.userAgent = options.userAgentSuffix ? `${base} ${options.userAgentSuffix}` : base;
     const fetchImpl = options.fetch ?? globalThis.fetch;
@@ -377,7 +401,11 @@ export class PeerApiClient {
           'listPeersAsGossipConfig() instead',
       );
     }
-    const raw = await this.requestJson(this.basePath + '/peers', query.toQueryString(), opts);
+    const raw = await this.requestJson(
+      this.basePath + '/peers',
+      this.withDefaultNetwork(query).toQueryString(),
+      opts,
+    );
     if ('notModified' in raw) return raw;
     const body = raw.body;
     const envelope = decodeEnvelope(body);
@@ -466,7 +494,12 @@ export class PeerApiClient {
    */
   async getPeer(
     ip: string,
-    opts: RequestOptions & { chain?: string; fields?: string | readonly string[] } = {},
+    opts: RequestOptions & {
+      chain?: string;
+      fields?: string | readonly string[];
+      /** Which network to look the peer up on; falls back to the client option. */
+      network?: Network;
+    } = {},
   ): Promise<PeerResult | NotModifiedResult> {
     if (!isIpv4(ip)) {
       const raw: string = ip;
@@ -480,6 +513,8 @@ export class PeerApiClient {
     let query = new PeerQuery();
     if (opts.chain !== undefined) query = query.chain(opts.chain as 'Mainnet' | 'Testnet');
     if (opts.fields !== undefined) query = query.fields(opts.fields);
+    const network = checkNetwork(opts.network) ?? this.network;
+    if (network !== null) query = query.network(network);
     query.validate();
     const raw = await this.requestJson(
       `${this.basePath}/peers/${encodeRfc3986(ip)}`,
@@ -518,7 +553,7 @@ export class PeerApiClient {
     }
     const raw = await this.requestJson(
       this.basePath + '/peers/facets',
-      query.toQueryString(),
+      this.withDefaultNetwork(query).toQueryString(),
       opts,
     );
     if ('notModified' in raw) return raw;
@@ -552,7 +587,7 @@ export class PeerApiClient {
     query: PeerQuery = new PeerQuery(),
     opts: RequestOptions = {},
   ): Promise<GossipConfigResult | NotModifiedResult> {
-    const q = query.format('gossip_config');
+    const q = this.withDefaultNetwork(query.format('gossip_config'));
     q.validate();
     const raw = await this.requestJson(this.basePath + '/peers', q.toQueryString(), opts);
     if ('notModified' in raw) return raw;
@@ -582,7 +617,7 @@ export class PeerApiClient {
   ): Promise<NetworkMapGraphResult | NotModifiedResult> {
     const raw = await this.requestJson(
       this.basePath + '/network-map/graph',
-      networkMapQueryString(options),
+      networkMapQueryString(this.withDefaultMapNetwork(options)),
       opts,
     );
     if ('notModified' in raw) return raw;
@@ -606,7 +641,7 @@ export class PeerApiClient {
   ): Promise<NetworkMapSummaryResult | NotModifiedResult> {
     const raw = await this.requestJson(
       this.basePath + '/network-map/summary',
-      networkMapQueryString(options),
+      networkMapQueryString(this.withDefaultMapNetwork(options)),
       opts,
     );
     if ('notModified' in raw) return raw;
@@ -616,6 +651,17 @@ export class PeerApiClient {
       servesMempool: decodeCounts(raw.body['serves_mempool']),
       auction: decodeCounts(raw.body['auction']),
     };
+  }
+
+  /** The client-level `network`, unless the query sets its own (§10 D-U). */
+  private withDefaultNetwork(query: PeerQuery): PeerQuery {
+    if (this.network === null || query.toObject()['network'] !== undefined) return query;
+    return query.network(this.network);
+  }
+
+  private withDefaultMapNetwork(options: NetworkMapOptions): NetworkMapOptions {
+    if (this.network === null || options.network !== undefined) return options;
+    return { ...options, network: this.network };
   }
 
   private networkMapBase(body: Record<string, unknown>, meta: ResultMeta): NetworkMapSummaryBase {

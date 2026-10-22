@@ -35,6 +35,7 @@ const FLOAT_FIELDS = new Set(['min_uptime']);
 
 const SETTER: Record<string, string> = {
   chain: 'chain',
+  network: 'network',
   cc: 'cc',
   region: 'region',
   asn: 'asn',
@@ -288,6 +289,7 @@ function networkMapOptions(spec: Json): Json {
       out[name] = value;
     } else if (name === 'serves_mempool') out.servesMempool = value;
     else if (name === 'auction') out.auction = value;
+    else if (name === 'network') out.network = value;
     else throw new Error(`unknown network-map option ${name}`);
   }
   return out;
@@ -333,6 +335,7 @@ function envelopePayload(env: Json): Json {
     available: env.available,
     stale: env.stale,
     chain: env.chain ?? null,
+    network: env.network ?? null,
     generated_at: env.generated_at ?? null,
     next_sweep_at: env.next_sweep_at ?? null,
     attribution: env.attribution ?? null,
@@ -344,6 +347,7 @@ function mapEnvelopePayload(env: Json): Json {
     version: env.version ?? null,
     available: env.available,
     stale: env.stale,
+    network: env.network ?? null,
     generated_at: env.generated_at ?? null,
   };
 }
@@ -358,9 +362,9 @@ function signals(peers: Json[]): Json[] {
   ]);
 }
 
-/** 1.1.0: `[id, state, tier, city]` per peer, in order. */
+/** `[id, state, tier, city, version]` per peer, in order (network, D-U). */
 function rows(peers: Json[]): Json[] {
-  return peers.map((p) => [p.id, p.state, p.tier, p.city]);
+  return peers.map((p) => [p.id, p.state, p.tier, p.city, p.version]);
 }
 
 function citiesPayload(cities: Json[] | null): Json {
@@ -389,7 +393,11 @@ async function runHttp(req: Json): Promise<Json> {
 
   try {
     if (op === 'get_peer') {
-      const result: Json = await client.getPeer(req.ip);
+      const network = req.query?.network;
+      const result: Json = await client.getPeer(
+        req.ip,
+        network === undefined || network === null ? {} : { network },
+      );
       return {
         ok: true,
         status: result.status,
@@ -421,6 +429,7 @@ async function runHttp(req: Json): Promise<Json> {
       if (op === 'network_map_graph') {
         out.truncated = result.truncated;
         out.node_cities = result.nodes.map((n: Json) => n.city);
+        out.node_versions = result.nodes.map((n: Json) => n.version);
       } else {
         out.connectable = result.connectable;
         out.serves_mempool = result.servesMempool;

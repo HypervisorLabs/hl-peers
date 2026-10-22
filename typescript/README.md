@@ -86,6 +86,7 @@ const facets = await client.facets(peerQuery().cc(['DE']).servesMempool([true]))
 | builder method | wire | notes |
 |---|---|---|
 | `chain('Mainnet')` | `chain` | closed enum |
+| `network('testnet')` | `network` | closed: `mainnet` `testnet`; unset ⇒ not sent (mainnet). [Testnet (beta)](#testnet-beta) |
 | `cc(['DE'])` / `country(['DE'])` | `cc` / `country` | upper-cased; `country` is a server-side alias of `cc` (both ⇒ union) |
 | `region(['aws:eu-central-1'])` | `region` | 🪤 cloud-hosted peers only |
 | `asn(['AS64500'])` | `asn` | |
@@ -156,6 +157,67 @@ Options: `maxTier`, `showUnreached`, `hideUnreachable`, `connectable` (closed
 enum), `cc`, `operator`, `label`, and `servesMempool` / `auction`, typed
 and validated exactly like the builder's. Same ETag cache, errors, `rateLimit` and
 `apiVersion` as every other call; `available: false` is returned as-is.
+
+## Testnet (beta)
+
+The API serves the testnet peer graph as well as mainnet. `network` picks which
+graph is read: `'mainnet'` | `'testnet'`, lower-case and case-sensitive (so it
+never blurs with `chain`, which is capitalised). Unset sends nothing, so the
+server answers for mainnet and a mainnet request is byte-identical to one from
+an earlier release.
+
+List testnet peers and their hardfork versions:
+
+```ts
+import { BadRequestError, PeerApiClient, peerQuery } from 'hl-peers';
+
+const client = new PeerApiClient();
+try {
+  const res = await client.listPeers(peerQuery().network('testnet'));
+  if (!('notModified' in res) && res.envelope.available) {
+    console.log(res.envelope.network, res.envelope.chain); // 'testnet' 'Testnet'
+    for (const p of res.peers) {
+      // the node's reported hardfork version, e.g. '1550'; null if not reported
+      console.log(p.id, p.version ?? 'unreported', p.cc, p.asn, p.org);
+    }
+  }
+} catch (err) {
+  if (err instanceof BadRequestError && err.parameter === 'network') {
+    // network-not-served: this deployment does not serve testnet right now
+  } else throw err;
+}
+```
+
+Where it goes:
+
+- **`/peers` and `/peers/facets`:** the builder field `peerQuery().network('testnet')`
+  (works with `iterPeers`, `listAllPeers` and `listPeersAsGossipConfig` too).
+- **`getPeer` and the network map:** a per-call option —
+  `client.getPeer(ip, { network: 'testnet' })`,
+  `client.networkMapGraph({ network: 'testnet' })`.
+- **Client-wide:** `new PeerApiClient({ network: 'testnet' })` makes it the
+  default for every call that sets none; a per-call value wins. The default is
+  unset (mainnet).
+
+Every result's envelope carries `network` (`'testnet'` on a testnet answer, `null`
+on mainnet), and a testnet body states `chain: 'Testnet'`. A peer's `version` is
+the hardfork version on testnet and always `null` on mainnet; the geo/ASN fields
+(`cc`, `cc_confidence`, `cc_source`, `region`, `asn`, `org`) are the same as on
+mainnet. Anything but `'mainnet'` / `'testnet'` (`'Testnet'`, `'devnet'`) is an
+`InvalidError` with `parameter === 'network'` before any request.
+
+🪤 **Known gaps while testnet is beta:**
+
+- the graph is small, and operator-run nodes may be omitted;
+- no session data yet, so `mempool` / `auction` and their facets are unknown;
+- `blocks_behind` is approximate;
+- testnet resets: `available: false` for a while after one is normal, and is
+  not a finding about the network;
+- a deployment that does not serve testnet answers `400 network-not-served`,
+  raised as the existing `BadRequestError` with `parameter === 'network'` (no new
+  error class, so existing `catch` blocks keep working).
+
+`examples/06-testnet.ts` is the runnable version, executed against the fixtures.
 
 ## Gossip config from the API
 
@@ -348,6 +410,8 @@ hl-peers query --auction holds_slot,bidding --output table
 hl-peers query --cc DE --format gossip-config > override_gossip_config.json
 hl-peers facets --serves-mempool true,null
 hl-peers peer 192.0.2.10
+hl-peers query --network testnet --output json   # testnet (beta)
+hl-peers peer 192.0.2.50 --network testnet
 hl-peers gossip show     --path ~/override_gossip_config.json
 hl-peers gossip validate --path ~/override_gossip_config.json
 hl-peers gossip update   --path ~/override_gossip_config.json \
@@ -383,7 +447,7 @@ itself supports Node >= 18.
 `test/conformance.test.ts` is **one generic runner** over all 76 cases in
 `../fixtures/gossip/cases`, byte-exact, asserting the warning set from a final
 `validate()`. HTTP behaviour is replayed through an injected `fetch` over all
-38 `../fixtures/http` cases, and one integration test spawns
+44 `../fixtures/http` cases, and one integration test spawns
 `tools/mock_server.py` on a free port. `test/fields.test.ts` reads
 `../spec/peer-api-v1.fields.json` and asserts the hand-shaped decoders cover
 exactly the spec's field sets. No default test run touches the network.

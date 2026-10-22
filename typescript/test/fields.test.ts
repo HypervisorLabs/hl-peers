@@ -93,6 +93,7 @@ const MAP_RESULT_KEY: Record<string, string> = {
   version: 'envelope',
   available: 'envelope',
   stale: 'envelope',
+  network: 'envelope',
   generated_at: 'envelope',
   operator_nodes: 'operatorNodes',
   node_count: 'nodeCount',
@@ -126,6 +127,7 @@ test('network-map graph/summary results cover exactly the spec field sets', asyn
 function everyParam(): ReturnType<typeof peerQuery> {
   return peerQuery()
     .chain('Mainnet')
+    .network('testnet')
     .cc(['DE'])
     .country(['DE'])
     .region(['aws:eu-central-1'])
@@ -173,6 +175,7 @@ test('network-map options emit exactly spec.network_map_params', () => {
     label: 'sentry',
     servesMempool: [true],
     auction: ['holds_slot'],
+    network: 'testnet',
   });
   const names = qs.split('&').map((kv) => kv.split('=')[0] ?? '');
   assert.deepEqual(sorted(names), sorted(SPEC.network_map_params));
@@ -189,6 +192,7 @@ test('the closed enums the builder validates are exactly the spec enums', () => 
       sort: (v) => peerQuery().sort(v as never),
       format: (v) => peerQuery().format(v as never),
       chain: (v) => peerQuery().chain(v as never),
+      network: (v) => peerQuery().network(v as never),
     };
     const set = setter[name];
     assert.ok(set !== undefined, `no builder field for spec enum ${name}`);
