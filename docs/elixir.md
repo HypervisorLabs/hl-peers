@@ -27,7 +27,9 @@ package will follow.
 `:base_path` (`""`), `:api_key`, `:timeout`, `:user_agent`
 (`hl-peers-elixir/1.1.0`), `:user_agent_suffix`, `:max_retries` (**0**),
 `:max_retry_after`, `:min_poll_interval`, `:cache`, `:adapter`,
-`:adapter_opts`, and the test seams `:sleep_fun` / `:rand_fun` / `:clock_fun`.
+`:adapter_opts`, `:network` (`nil`; the default `network` for every call that
+sets none, **Testnet beta**), and the test seams `:sleep_fun` / `:rand_fun` /
+`:clock_fun`.
 `:suppress_placeholder_warning` is accepted and ignored.
 
 Resolution happens once, at construction: `base_url` is explicit →
@@ -61,7 +63,7 @@ same query produce the same URL, and so the same CDN cache key.
 
 Local validation is **deliberately thin** — `seen_within`'s shape,
 `min_uptime`'s range, non-negative ceilings, `limit >= 1`, `max_latency_ms`
-requiring a `vantage`, and closed enums (`chain`, `sort`, `format`,
+requiring a `vantage`, and closed enums (`chain`, `network`, `sort`, `format`,
 `connectable`, `state` incl. `responsive` / `open`, `serves_mempool` over
 `true` / `false` / `nil`, `auction` over `holds_slot` / `bidding` /
 `bid_before` / `nil`). `cc`, `country`, `region`, `asn`, `role`, `label`,
@@ -95,13 +97,20 @@ it excludes unknown (`serves: nil`) peers, because "unknown" is not
 
 The network-map calls take a keyword list of filters (`:max_tier`,
 `:show_unreached`, `:hide_unreachable`, `:connectable`, `:cc`, `:operator`,
-`:label`, `:serves_mempool`, `:auction`), validated by
+`:label`, `:serves_mempool`, `:auction`, `:network`), validated by
 `HlPeers.NetworkMap.to_params/1`; an unknown filter is a local `Invalid`.
 `:serves_mempool` and `:auction` go through `HlPeers.Query`'s own validation
 and serialization, so they behave exactly as on the peers query. The graph and
 summary carry `cities` (`%HlPeers.NetworkMap.CityCluster{}`) and
 `attribution`, both `nil` when no city positions are served; the summary also
 carries `serves_mempool` / `auction` count maps.
+
+`network` (**Testnet, beta**, §10 D-U) is a `Query` field, a network-map
+filter, and a `get_peer/3` option (`network: "testnet"`), and each of them
+falls back to the client's `:network`. Unset sends nothing. `network` is
+decoded on `Envelope`, `NetworkMap.Graph` and `NetworkMap.Summary` (`nil` means
+mainnet). `400 network-not-served` is `:bad_request` with
+`parameter: "network"`.
 
 ### Results
 

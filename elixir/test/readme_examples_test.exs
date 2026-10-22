@@ -202,6 +202,33 @@ defmodule HlPeers.ReadmeExamplesTest do
     assert summary.connectable == %{"yes" => 3, "no" => 1, "unknown" => 0}
   end
 
+  test "Testnet (beta): list testnet peers and their hardfork versions", ctx do
+    %{client: client, recorder: recorder} = ctx
+    {:ok, page} = HlPeers.list_peers(client, network: "testnet")
+    assert page.envelope.network == "testnet"
+    assert page.envelope.chain == "Testnet"
+    assert hd(Enum.map(page.peers, &{&1.id, &1.version})) == {"192.0.2.50", "1550"}
+
+    {:ok, %{peer: peer}} = HlPeers.get_peer(client, "192.0.2.50", network: "testnet")
+    assert peer.version == "1550"
+    {:ok, graph} = HlPeers.network_map_graph(client, network: "testnet")
+    assert graph.network == "testnet"
+
+    testnet =
+      Client.new(
+        network: "testnet",
+        base_url: "http://fixtures.invalid",
+        adapter: FixtureAdapter,
+        adapter_opts: [recorder: recorder]
+      )
+
+    {:ok, facets} = HlPeers.facets(testnet)
+    assert facets.envelope.network == "testnet"
+
+    assert {:error, %Error{kind: :invalid, parameter: "network"}} =
+             HlPeers.list_peers(client, network: "Testnet")
+  end
+
   test "let the server render the gossip config, then save", %{client: client, path: path} do
     {:ok, result} = HlPeers.list_peers_as_gossip_config(client, Query.new(cc: ["DE"]))
 

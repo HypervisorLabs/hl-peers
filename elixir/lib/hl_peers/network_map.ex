@@ -15,9 +15,13 @@ defmodule HlPeers.NetworkMap do
   | `:label` | string or list | as-is / CSV |
   | `:serves_mempool` | list over `true`, `false`, `nil` (closed), or CSV | CSV, `nil` as `null` |
   | `:auction` | list over `"holds_slot"`, `"bidding"`, `"bid_before"`, `nil` (closed), or CSV | CSV, `nil` as `null` |
+  | `:network` | `"mainnet"` or `"testnet"` (or the atoms; closed, case-sensitive) | as-is |
 
-  `:serves_mempool` and `:auction` are validated and serialized by
+  `:serves_mempool`, `:auction` and `:network` are validated and serialized by
   `HlPeers.Query`, exactly like the `/peers` builder fields of the same name.
+  `:network` (**Testnet, beta**) picks which network's graph is drawn; unset,
+  it falls back to the client's `:network` default, and with neither nothing
+  is sent (mainnet).
 
   Unset filters are omitted; parameters are lexicographic and percent-encoded
   exactly like the peers query (§2.3).
@@ -25,8 +29,8 @@ defmodule HlPeers.NetworkMap do
 
   alias HlPeers.Error
 
-  @filters ~w(auction cc connectable hide_unreachable label max_tier operator serves_mempool
-               show_unreached)a
+  @filters ~w(auction cc connectable hide_unreachable label max_tier network operator
+               serves_mempool show_unreached)a
   @connectable ~w(yes no unknown)
 
   @doc "The filter names the network-map endpoints take."
@@ -94,7 +98,7 @@ defmodule HlPeers.NetworkMap do
     end
   end
 
-  defp param(key, value) when key in [:serves_mempool, :auction] do
+  defp param(key, value) when key in [:serves_mempool, :auction, :network] do
     query = HlPeers.Query.new([{key, value}])
 
     with :ok <- HlPeers.Query.validate(query) do
@@ -193,6 +197,9 @@ defmodule HlPeers.NetworkMap.Graph do
   when the producer serves no city positions — `nil` is not `[]`. With cities,
   each node's `city` is its cluster id.
 
+  `network` is `"testnet"` on a `network: "testnet"` graph (beta) and `nil`
+  otherwise (mainnet); each testnet node's `version` is its hardfork version.
+
   🔴 `available: false` is returned as-is — the producer could not build a
   graph. It is not an error and not an empty network.
   """
@@ -203,6 +210,7 @@ defmodule HlPeers.NetworkMap.Graph do
           version: String.t() | nil,
           available: boolean() | nil,
           stale: boolean() | nil,
+          network: String.t() | nil,
           generated_at: String.t() | nil,
           operator_nodes_count: integer() | nil,
           node_count: integer() | nil,
@@ -227,6 +235,7 @@ defmodule HlPeers.NetworkMap.Graph do
     :version,
     :available,
     :stale,
+    :network,
     :generated_at,
     :operator_nodes_count,
     :node_count,
@@ -257,6 +266,7 @@ defmodule HlPeers.NetworkMap.Summary do
   `null`) and `auction` (`holds_slot` / `bidding` / `bid_before` / `null`)
   count maps (empty when absent), and `cities` / `attribution` as on the graph
   (served live though upstream's summary schema omits them, CLIENT_SPEC §10 D-S).
+  `network` is `"testnet"` on a testnet summary (beta), else `nil`.
 
   🔴 `available: false` is returned as-is, never an error.
   """
@@ -265,6 +275,7 @@ defmodule HlPeers.NetworkMap.Summary do
           version: String.t() | nil,
           available: boolean() | nil,
           stale: boolean() | nil,
+          network: String.t() | nil,
           generated_at: String.t() | nil,
           operator_nodes_count: integer() | nil,
           node_count: integer() | nil,
@@ -289,6 +300,7 @@ defmodule HlPeers.NetworkMap.Summary do
     :version,
     :available,
     :stale,
+    :network,
     :generated_at,
     :operator_nodes_count,
     :node_count,

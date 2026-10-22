@@ -1,5 +1,21 @@
 # Changelog — hl_peers (Elixir)
 
+## Unreleased
+
+- **Testnet (beta)** — `network` (`"mainnet"` | `"testnet"`, or the atoms), a
+  closed, case-sensitive enum (`CLIENT_SPEC.md` §10 D-U): a `HlPeers.Query`
+  field for `list_peers/3`, `stream_peers/3` / `iter_peers/3`, `facets/3` and
+  `list_peers_as_gossip_config/3`; a `network_map_graph/3` /
+  `network_map_summary/3` filter; a `get_peer/3` option; and a client-level
+  default, `HlPeers.Client.new(network: …)` (default `nil`), which a per-call
+  value overrides. Unset sends nothing: mainnet URLs are unchanged.
+- `network` (`String.t() | nil`) is decoded on `HlPeers.Envelope` (so on
+  `PeerList`, `PeerEnvelope` and `Facets`) and on `NetworkMap.Graph` /
+  `NetworkMap.Summary`. A testnet `Peer.version` is the node's hardfork version.
+- An out-of-enum `network` is `Invalid{parameter: "network"}` before any
+  request. `400 network-not-served` is the existing `:bad_request` with
+  `parameter: "network"`. There is no new error kind.
+
 ## 1.1.0 — 2026-10-20 — Initial release
 
 - `HlPeers` — the Peer API client: `list_peers/3`, `stream_peers/3` /

@@ -194,12 +194,62 @@ graph.cities                                # [%HlPeers.NetworkMap.CityCluster{}
 ```
 
 Filters: `:max_tier`, `:show_unreached`, `:hide_unreachable`, `:connectable`
-(closed enum), `:cc`, `:operator`, `:label`, and `:serves_mempool` / `:auction`
-(closed enums, exactly as on the peers query). `cities` and `attribution` are
+(closed enum), `:cc`, `:operator`, `:label`, `:serves_mempool` / `:auction`
+(closed enums, exactly as on the peers query), and `:network` (see
+[Testnet (beta)](#testnet-beta)). `cities` and `attribution` are
 `nil` when the producer serves no city positions (`nil` is not `[]`); with
 cities, each node's `city` is its cluster id. Same ETag cache, error mapping,
 rate-limit and `api_version` exposure as the peers calls; `available: false` is
 returned as-is.
+
+## Testnet (beta)
+
+Every call takes a `network`: `"mainnet"` (the server's default) or
+`"testnet"`. The atoms `:mainnet` / `:testnet` work too. It is a query field on
+`list_peers/3`, `stream_peers/3`, `facets/3` and
+`list_peers_as_gossip_config/3`, a filter on `network_map_graph/3` /
+`network_map_summary/3`, and an option on `get_peer/3`. The client can also
+carry a default, and a per-call value wins over it. Unset sends nothing, so a
+mainnet request is byte-identical to one sent before `network` existed and
+hits the same cache key.
+
+List testnet peers and their hardfork versions:
+
+```elixir
+{:ok, page} = HlPeers.list_peers(client, network: "testnet")
+page.envelope.network                       # "testnet" (nil on a mainnet body)
+page.envelope.chain                         # "Testnet"
+Enum.map(page.peers, &{&1.id, &1.version})  # [{"192.0.2.50", "1550"}, …]
+
+# one peer, the graph, or a client that reads testnet by default
+{:ok, %{peer: peer}} = HlPeers.get_peer(client, "192.0.2.50", network: "testnet")
+{:ok, graph} = HlPeers.network_map_graph(client, network: "testnet")
+
+testnet = HlPeers.Client.new(network: "testnet")
+{:ok, facets} = HlPeers.facets(testnet)
+```
+
+On testnet a peer's `version` is the node's reported **hardfork version**, an
+opaque string such as `"1550"` (`nil` when the node did not report one). On
+mainnet it is always `nil`. Testnet rows carry the same geo/ASN fields (`cc`,
+`asn`, `org`, `region`) as mainnet.
+
+`network` is a closed, lower-case, case-sensitive enum. `"Testnet"` or
+`"devnet"` is refused locally with `%Error{kind: :invalid, parameter: "network"}`
+before any request is sent. `"Testnet"` is the spelling of `chain`, which
+filters on what the server states. `network` picks which graph is read.
+
+Known gaps while testnet is in beta:
+
+- the graph is small;
+- there is no session data yet;
+- `blocks_behind` is approximate;
+- testnet resets, so `available: false` for a while afterwards is normal (it is
+  returned as-is, as on mainnet);
+- operator-run nodes may be omitted;
+- a deployment that does not serve testnet answers `400 network-not-served`,
+  which surfaces as `%Error{kind: :bad_request, parameter: "network"}`. There is
+  no new error kind, so match on `parameter == "network"`.
 
 ## Gossip config recipes
 

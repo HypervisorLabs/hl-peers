@@ -423,7 +423,7 @@ defmodule HlPeers.V1AdditionsTest do
     end
 
     test "the closed enums match", %{fields: fields} do
-      for {name, allowed} <- fields["enums"], name in ~w(state serves_mempool auction) do
+      for {name, allowed} <- fields["enums"], name in ~w(state serves_mempool auction network) do
         assert :ok = Query.validate(Query.new([{String.to_atom(name), allowed}]))
       end
     end
@@ -433,6 +433,7 @@ defmodule HlPeers.V1AdditionsTest do
   defp sample(field), do: [{field, sample_value(field)}]
 
   defp sample_value(:chain), do: "Mainnet"
+  defp sample_value(:network), do: "testnet"
   defp sample_value(:sort), do: "tier"
   defp sample_value(:format), do: "json"
   defp sample_value(:connectable), do: ["yes"]

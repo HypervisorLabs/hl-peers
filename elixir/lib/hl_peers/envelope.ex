@@ -16,6 +16,10 @@ defmodule HlPeers.Envelope do
   `next_sweep_at` is the data's own clock; `HlPeers.Poller` aligns to it
   rather than guessing.
 
+  `network` is `"testnet"` on a `network=testnet` body (which also states
+  `chain: "Testnet"`) and `nil` otherwise — `nil` means mainnet. It is decoded
+  as an open string. **Testnet is beta.**
+
   `attribution` is the data-licence credit line the server sends with the geo
   fields (e.g. the IP-geolocation database's CC BY notice). If you republish
   `cc` / `asn` / `org`, carry it with them.
@@ -28,14 +32,25 @@ defmodule HlPeers.Envelope do
           chain: String.t() | nil,
           generated_at: String.t() | nil,
           next_sweep_at: String.t() | nil,
-          attribution: String.t() | nil
+          attribution: String.t() | nil,
+          network: String.t() | nil
         }
 
-  defstruct [:version, :available, :stale, :chain, :generated_at, :next_sweep_at, :attribution]
+  defstruct [
+    :version,
+    :available,
+    :stale,
+    :chain,
+    :generated_at,
+    :next_sweep_at,
+    :attribution,
+    :network
+  ]
 
   @doc "The wire keys this struct models."
   @spec known_fields() :: [String.t()]
-  def known_fields, do: ~w(attribution available chain generated_at next_sweep_at stale version)
+  def known_fields,
+    do: ~w(attribution available chain generated_at network next_sweep_at stale version)
 
   @doc false
   @spec from_body(map()) :: t()
@@ -47,7 +62,8 @@ defmodule HlPeers.Envelope do
       chain: body["chain"],
       generated_at: body["generated_at"],
       next_sweep_at: body["next_sweep_at"],
-      attribution: body["attribution"]
+      attribution: body["attribution"],
+      network: body["network"]
     }
   end
 end

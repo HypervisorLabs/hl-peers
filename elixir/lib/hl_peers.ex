@@ -28,6 +28,22 @@ defmodule HlPeers do
       # every page, lazily, with a hard guard at max_items (default 10 000)
       client |> HlPeers.stream_peers(HlPeers.Query.sentries()) |> Enum.take(5)
 
+  ## Testnet (beta)
+
+  Every call takes a `network` — `"mainnet"` (the server's default) or
+  `"testnet"` — as a query field (`list_peers/3`, `stream_peers/3`,
+  `facets/3`, `list_peers_as_gossip_config/3`), a filter (`network_map_graph/3`,
+  `network_map_summary/3`) or an option (`get_peer/3`), and the client can carry
+  a default: `HlPeers.Client.new(network: "testnet")`. Unset sends nothing, so
+  a mainnet request is byte-identical to one from before `network` existed.
+  A testnet row's `version` is the node's hardfork version.
+
+      {:ok, page} = HlPeers.list_peers(client, network: "testnet")
+      Enum.map(page.peers, &{&1.id, &1.version})
+
+  A deployment that does not serve testnet answers
+  `%HlPeers.Error{kind: :bad_request, parameter: "network"}`.
+
   Everything answers `{:ok, term}` or `{:error, %HlPeers.Error{}}`; the `!`
   variants raise the same struct.
 
@@ -86,7 +102,7 @@ defmodule HlPeers do
   @spec list_peers(Client.t(), Query.t() | keyword(), keyword()) ::
           {:ok, PeerList.t() | NotModified.t()} | {:error, Error.t()}
   def list_peers(client, query \\ %Query{}, opts \\ []) do
-    query = to_query(query)
+    query = query |> to_query() |> default_network(client)
 
     with :ok <- Query.validate(query),
          :ok <- refuse_gossip_config_format(query),
@@ -143,7 +159,8 @@ defmodule HlPeers do
   @spec list_peers_as_gossip_config(Client.t(), Query.t() | keyword(), keyword()) ::
           {:ok, GossipConfigResult.t() | NotModified.t()} | {:error, Error.t()}
   def list_peers_as_gossip_config(client, query \\ %Query{}, opts \\ []) do
-    query = query |> to_query() |> Query.put(:format, "gossip_config")
+    query =
+      query |> to_query() |> default_network(client) |> Query.put(:format, "gossip_config")
 
     with :ok <- Query.validate(query),
          {:ok, response} <-
@@ -280,15 +297,53 @@ defmodule HlPeers do
   `%Error{kind: :invalid, parameter: "ip"}`, while a server `400` maps to
   `:bad_request` and a `404` to `:not_found`, distinctly. IPv6 input is rejected
   locally — the API is IPv4-only.
+
+  `opts` takes `:headers` and `:network` (`"mainnet"` or `"testnet"`, or the
+  atoms; **Testnet is beta**), which falls back to the client's `:network`
+  default. Unset, nothing is sent (mainnet); an out-of-enum value is
+  `Invalid{parameter: "network"}` before any request.
+
+      {:ok, %{peer: peer}} = HlPeers.get_peer(client, "192.0.2.50", network: "testnet")
+      peer.version
+      #=> "1550"
   """
   @spec get_peer(Client.t(), String.t(), keyword()) ::
           {:ok, PeerEnvelope.t() | NotModified.t()} | {:error, Error.t()}
   def get_peer(client, ip, opts \\ []) do
+    {network, opts} = Keyword.pop(opts, :network)
+
     with :ok <- validate_ip(ip),
+         {:ok, params} <- network_params(network || client.network),
          path = client.base_path <> @peers_path <> "/" <> Query.encode_component(ip),
-         {:ok, response} <- Client.get(client, path, [], opts) do
+         {:ok, response} <- Client.get(client, path, params, opts) do
       decode(response, &peer_envelope/2)
     end
+  end
+
+  # §4.3: `network` is the only query parameter `get_peer` takes, validated as
+  # the builder field of the same name.
+  defp network_params(nil), do: {:ok, []}
+
+  defp network_params(network) do
+    query = Query.new(network: network)
+
+    with :ok <- Query.validate(query), do: {:ok, Query.to_params(query)}
+  end
+
+  # The client-level `network` default (CLIENT_SPEC §1) applies only when the
+  # call set none; a per-call value always wins.
+  defp default_network(%Query{network: nil} = query, %Client{network: network})
+       when not is_nil(network),
+       do: Query.put(query, :network, network)
+
+  defp default_network(query, _client), do: query
+
+  defp default_map_network(filters, %Client{network: nil}), do: filters
+
+  defp default_map_network(filters, %Client{network: network}) do
+    if Enum.any?(filters, fn {key, value} -> key in [:network, "network"] and value != nil end),
+      do: filters,
+      else: Enum.to_list(filters) ++ [network: network]
   end
 
   @doc "Raising `get_peer/3`."
@@ -327,7 +382,7 @@ defmodule HlPeers do
   @spec facets(Client.t(), Query.t() | keyword(), keyword()) ::
           {:ok, Facets.t() | NotModified.t()} | {:error, Error.t()}
   def facets(client, query \\ %Query{}, opts \\ []) do
-    query = to_query(query)
+    query = query |> to_query() |> default_network(client)
 
     with :ok <- Query.validate_for_facets(query),
          {:ok, response} <-
@@ -404,8 +459,11 @@ defmodule HlPeers do
   `GET <base_path>/network-map/graph` — the whole published graph.
 
   `filters` is a keyword list over `:max_tier`, `:show_unreached`,
-  `:hide_unreachable`, `:connectable`, `:cc`, `:operator`, `:label` (see
-  `HlPeers.NetworkMap`); an unknown filter or a bad value is a client-side
+  `:hide_unreachable`, `:connectable`, `:cc`, `:operator`, `:label`,
+  `:serves_mempool`, `:auction` and `:network` (see `HlPeers.NetworkMap`).
+  `:network` (`"mainnet"` or `"testnet"`; **Testnet is beta**) falls back to
+  the client's `:network` default; unset, nothing is sent (mainnet). An
+  unknown filter or a bad value is a client-side
   `Invalid`. `opts` takes `:headers`. Same ETag cache, error mapping,
   rate-limit and `api_version` exposure as the peers calls.
 
@@ -414,11 +472,14 @@ defmodule HlPeers do
 
       {:ok, graph} = HlPeers.network_map_graph(client, max_tier: 2)
       {graph.node_count, Enum.map(graph.edges, &{&1.from, &1.to})}
+
+      {:ok, testnet} = HlPeers.network_map_graph(client, network: "testnet")
+      Enum.map(testnet.nodes, &{&1.id, &1.version})
   """
   @spec network_map_graph(Client.t(), keyword(), keyword()) ::
           {:ok, NetworkMap.Graph.t() | NotModified.t()} | {:error, Error.t()}
   def network_map_graph(client, filters \\ [], opts \\ []) do
-    with {:ok, params} <- NetworkMap.to_params(filters),
+    with {:ok, params} <- filters |> default_map_network(client) |> NetworkMap.to_params(),
          {:ok, response} <- Client.get(client, client.base_path <> @graph_path, params, opts) do
       decode(response, &graph_result/2)
     end
@@ -438,7 +499,7 @@ defmodule HlPeers do
   @spec network_map_summary(Client.t(), keyword(), keyword()) ::
           {:ok, NetworkMap.Summary.t() | NotModified.t()} | {:error, Error.t()}
   def network_map_summary(client, filters \\ [], opts \\ []) do
-    with {:ok, params} <- NetworkMap.to_params(filters),
+    with {:ok, params} <- filters |> default_map_network(client) |> NetworkMap.to_params(),
          {:ok, response} <- Client.get(client, client.base_path <> @summary_path, params, opts) do
       decode(response, &summary_result/2)
     end
@@ -715,6 +776,7 @@ defmodule HlPeers do
       version: body["version"],
       available: body["available"],
       stale: body["stale"],
+      network: body["network"],
       generated_at: body["generated_at"],
       operator_nodes_count: operator_nodes_count(body),
       node_count: body["node_count"],
@@ -741,6 +803,7 @@ defmodule HlPeers do
       version: body["version"],
       available: body["available"],
       stale: body["stale"],
+      network: body["network"],
       generated_at: body["generated_at"],
       operator_nodes_count: operator_nodes_count(body),
       node_count: body["node_count"],

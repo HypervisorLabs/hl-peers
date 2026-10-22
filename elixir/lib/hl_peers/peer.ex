@@ -24,8 +24,11 @@ defmodule HlPeers.Peer do
     (`cloud-range` | `db` | `db+rtt-confirmed`), `asn` and `org` are open
     strings. `region` is set only for cloud-hosted peers (for cloud-hosted peers). `uptime` is a nullable fraction, `feeders` a list of IPv4
     strings (possibly empty).
-  * `version` is **always `nil`** today (not published). Documented, not
-    asserted.
+  * `version` is a nullable, opaque string. On mainnet it is `nil` (not
+    published). On `network: "testnet"` (beta) it is the node's reported
+    **hardfork version** (e.g. `"1550"`), `nil` when the node did not report
+    one. Never decode it as a number. Testnet rows carry the same geo/ASN
+    fields as mainnet.
   * 🔴 `mempool` (`HlPeers.Peer.Mempool`) and `auction`
     (`HlPeers.Peer.Auction`) are always structs. An all-`nil` struct means
     **unknown**; `mempool.serves == nil` is *unknown*, not `false`. A peer

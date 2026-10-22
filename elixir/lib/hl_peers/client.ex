@@ -17,11 +17,16 @@ defmodule HlPeers.Client do
   | `:cache` | `true` (64 entries, LRU) | `false` disables it; an integer sets the capacity |
   | `:adapter` | `HlPeers.Adapter.Req` | injectable, which is how the suite runs offline |
   | `:clock_fun` | `&DateTime.utc_now/0` | the injectable clock: HTTP-date `Retry-After` and `RateLimited.reset_at` |
+  | `:network` | `nil` | the default `network` (`"mainnet"` or `"testnet"`, or the atoms) for every call that sets none; a per-call value wins. `nil` sends nothing (mainnet). **Testnet is beta** |
   | `:suppress_placeholder_warning` | — | accepted and ignored |
 
   `base_url` resolution order, evaluated once at construction: explicit argument
   → `HL_PEER_API_BASE_URL` → `https://api.hypervisor.gg`. `api_key`: explicit
   argument → `HL_PEER_API_KEY` → `nil`.
+
+  `network` is validated where it is used, like any other parameter: an
+  out-of-enum default answers `Invalid{parameter: "network"}` on the first call,
+  before any request is sent.
 
   `base_path` is the prefix every route is built under (`<base_path>/peers`,
   `<base_path>/peers/{ip}`, `<base_path>/peers/facets`,
@@ -88,7 +93,8 @@ defmodule HlPeers.Client do
             cache?: true,
             sleep_fun: nil,
             rand_fun: nil,
-            clock_fun: nil
+            clock_fun: nil,
+            network: nil
 
   @doc "The default `base_url`, `\"https://api.hypervisor.gg\"`."
   @spec default_base_url() :: String.t()
@@ -155,7 +161,8 @@ defmodule HlPeers.Client do
       cache?: cache?,
       sleep_fun: Keyword.get(opts, :sleep_fun, &Process.sleep/1),
       rand_fun: Keyword.get(opts, :rand_fun, &:rand.uniform/0),
-      clock_fun: Keyword.get(opts, :clock_fun, &DateTime.utc_now/0)
+      clock_fun: Keyword.get(opts, :clock_fun, &DateTime.utc_now/0),
+      network: opts[:network]
     }
   end
 

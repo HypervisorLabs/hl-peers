@@ -21,7 +21,8 @@ defmodule HlPeers.Query do
 
   ## Validation is deliberately thin
 
-  Only the five rules of §2.2 are checked locally. `cc`, `region`, `asn`,
+  Only the five rules of §2.2 are checked locally (`network` is one of the
+  closed enums of rule 5). `cc`, `region`, `asn`,
   `role`, `label`, `version` and `fields` are **open** sets that may grow
   additively within v1; validating them here would turn a server `400` that
   names the problem into a client-side guess. `limit` is not clamped locally
@@ -46,6 +47,20 @@ defmodule HlPeers.Query do
   `country` is the server-side alias of `cc` (both given ⇒ union). It is a
   separate field so the URL says what you wrote; it is upper-cased like `cc`.
 
+  ## `network` (Testnet, beta)
+
+  `network` picks **which network's graph** is read: `"mainnet"` or
+  `"testnet"` (atoms `:mainnet` / `:testnet` work too). It is a closed,
+  lower-case, case-sensitive enum — `"Testnet"` is refused locally, because
+  that spelling belongs to `chain`, which filters/asserts what the server
+  states. Unset sends nothing, so the server's default (mainnet) governs and a
+  mainnet URL is byte-identical to one built before `network` existed. A client
+  may carry a default (`HlPeers.Client.new(network: "testnet")`); a value set
+  here wins.
+
+      iex> HlPeers.Query.new(network: "testnet", tier: [1]) |> HlPeers.Query.to_query_string()
+      "network=testnet&tier=1"
+
   ## `try_new_peers`
 
   Only meaningful with `format=gossip_config`, i.e. with
@@ -60,13 +75,14 @@ defmodule HlPeers.Query do
 
   @csv_fields ~w(cc region asn tier role label country connectable state serves_mempool
                  auction version fields)a
-  @scalar_fields ~w(chain max_tier accepting max_blocks_behind min_uptime
+  @scalar_fields ~w(chain network max_tier accepting max_blocks_behind min_uptime
                     max_latency_ms vantage seen_within sort limit cursor format
                     try_new_peers)a
   @fields @csv_fields ++ @scalar_fields
 
   @enums %{
     chain: ~w(Mainnet Testnet),
+    network: ~w(mainnet testnet),
     sort: ~w(tier blocks_behind out_deg last_seen random),
     format: ~w(json gossip_config),
     connectable: ~w(yes no unknown),
@@ -139,6 +155,11 @@ defmodule HlPeers.Query do
     `nil` (closed enum). `nil` means never seen in the auction.
     """,
     try_new_peers: "Sets `try_new_peers`; only meaningful with `format=gossip_config`.",
+    network: """
+    Sets `network`: `"mainnet"` or `"testnet"` (or the atoms), a closed,
+    case-sensitive enum. Which network's graph to read; unset ⇒ omitted ⇒
+    mainnet (or the client's `:network` default). **Testnet is beta.**
+    """,
     state:
       "Sets `state`: a list over `responsive`, `open`, `full`, `syncing`, " <>
         "`listening`, `unreachable`, `unknown` (closed enum). `listening` = the " <>

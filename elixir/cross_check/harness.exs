@@ -559,7 +559,10 @@ defmodule HlPeers.CrossCheck.Harness do
     case request["op"] do
       "list_peers" -> peers_answer(HlPeers.list_peers(client, query), request)
       "list_peers_twice" -> list_peers_twice(client, query, request)
-      "get_peer" -> peer_answer(HlPeers.get_peer(client, request["ip"]), request)
+      # `network` is get_peer's one per-call option (§4.3); unset is `nil`.
+      "get_peer" ->
+        peer_answer(HlPeers.get_peer(client, request["ip"], network: query.network), request)
+
       "facets" -> facets_answer(HlPeers.facets(client, query), request)
       "iter_peers" -> iter_answer(client, query, request)
       "list_peers_as_gossip_config" -> gossip_config_answer(client, query, request)
@@ -656,8 +659,8 @@ defmodule HlPeers.CrossCheck.Harness do
 
   defp peer_answer({:error, %Error{} = error}, request), do: http_error(error, request)
 
-  # [id, state, tier, city] per peer, in order.
-  defp rows(peers), do: Enum.map(peers, &[&1.id, &1.state, &1.tier, &1.city])
+  # [id, state, tier, city, version] per peer, in order.
+  defp rows(peers), do: Enum.map(peers, &[&1.id, &1.state, &1.tier, &1.city, &1.version])
 
   defp cities_payload(nil), do: nil
 
@@ -747,6 +750,7 @@ defmodule HlPeers.CrossCheck.Harness do
           "edges" => Enum.map(graph.edges, &[&1.from, &1.to, &1.span]),
           "truncated" => graph.truncated,
           "node_cities" => Enum.map(graph.nodes, & &1.city),
+          "node_versions" => Enum.map(graph.nodes, & &1.version),
           "cities" => cities_payload(graph.cities),
           "attribution" => graph.attribution
         })
@@ -793,7 +797,8 @@ defmodule HlPeers.CrossCheck.Harness do
         "version" => result.version,
         "available" => result.available,
         "stale" => result.stale,
-        "generated_at" => result.generated_at
+        "generated_at" => result.generated_at,
+        "network" => result.network
       },
       "api_version" => result.api_version,
       "rate_limit" => rate_limit_payload(result.rate_limit),
@@ -866,7 +871,8 @@ defmodule HlPeers.CrossCheck.Harness do
       "chain" => envelope.chain,
       "generated_at" => envelope.generated_at,
       "next_sweep_at" => envelope.next_sweep_at,
-      "attribution" => envelope.attribution
+      "attribution" => envelope.attribution,
+      "network" => envelope.network
     }
   end
 end
