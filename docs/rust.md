@@ -51,6 +51,7 @@ hl-peers = { path = "…/rust", features = ["cli"] }         # + hl-peers
 | transport | `.transport(Arc<dyn Transport>)` | `reqwest` + rustls |
 | sleeper / jitter | `.sleeper(…)` / `.jitter(…)` | tokio sleep, xorshift jitter |
 | clock | `.clock(…)` | system clock; resolves an HTTP-date `Retry-After` |
+| network | `.network(Network::Testnet)` | unset — no `network` key is sent (mainnet). **Testnet (beta)**; a per-call `network` wins. See the crate README's "Testnet (beta)" |
 
 Both `base_url` and `api_key` are resolved **once**, at `build()`.
 `.suppress_placeholder_warning(_)` is accepted and ignored.

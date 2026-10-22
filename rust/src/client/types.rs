@@ -50,6 +50,76 @@ impl std::fmt::Display for Chain {
     }
 }
 
+/// Which network's peer graph to read (§2.1, §10 D-U). **Testnet (beta).**
+///
+/// The wire form is lower-case, `mainnet` | `testnet`, and parsing is
+/// **case-sensitive**: `Testnet` is the capitalised [`Chain`] spelling and is
+/// refused here, so the two questions are never blurred. [`Network`] picks
+/// which graph is read; [`Chain`] filters on (and asserts) what the server
+/// states — a testnet body states `chain: Testnet`.
+///
+/// Unset (the default everywhere) sends no `network` key at all, so the
+/// server's default — mainnet — governs and a mainnet URL is byte-identical
+/// to a 1.1 request.
+///
+/// ```
+/// # use hl_peers::Network;
+/// assert_eq!("testnet".parse::<Network>().unwrap(), Network::Testnet);
+/// assert_eq!(
+///     "Testnet".parse::<Network>().unwrap_err().parameter(),
+///     Some("network")
+/// );
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[non_exhaustive]
+pub enum Network {
+    /// Mainnet — what the server answers when no `network` is sent.
+    Mainnet,
+    /// Testnet (beta): a small graph, no session data, approximate
+    /// `blocks_behind`, and frequent resets (`available: false` for a while
+    /// is normal).
+    Testnet,
+}
+
+impl Network {
+    /// The wire spelling. Lower-case.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Network::Mainnet => "mainnet",
+            Network::Testnet => "testnet",
+        }
+    }
+
+    /// Parse the wire spelling. Case matters: an unknown value (including
+    /// `Testnet`) is [`Error::Invalid`](crate::Error::Invalid) with
+    /// parameter `network`.
+    pub fn parse(s: &str) -> crate::Result<Network> {
+        match s {
+            "mainnet" => Ok(Network::Mainnet),
+            "testnet" => Ok(Network::Testnet),
+            other => Err(crate::Error::invalid(
+                "network",
+                format!("{other} is not one of mainnet, testnet (case matters)"),
+            )),
+        }
+    }
+}
+
+impl std::str::FromStr for Network {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> crate::Result<Network> {
+        Network::parse(s)
+    }
+}
+
+impl std::fmt::Display for Network {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 /// Build a closed-on-the-wire, open-on-decode enum with a string wire form.
 macro_rules! tri_state {
     ($(#[$meta:meta])* $name:ident { $($(#[$vmeta:meta])* $variant:ident => $wire:literal),+ $(,)? }) => {
@@ -182,8 +252,14 @@ pub struct Envelope {
     pub available: bool,
     /// The served snapshot is older than the staleness bound.
     pub stale: bool,
-    /// The chain this answer is about.
+    /// The chain this answer is about. A `network=testnet` body states
+    /// `Testnet`.
     pub chain: String,
+    /// The network this answer is about: `Some("testnet")` on a
+    /// `network=testnet` body (beta), [`None`] when the key is absent — which
+    /// is every mainnet body. Decoded as an open string.
+    #[serde(default)]
+    pub network: Option<String>,
     /// When the data was generated.
     #[serde(default)]
     pub generated_at: Option<String>,
@@ -335,7 +411,10 @@ pub struct Peer {
     /// Share of our checks the peer answered, `0..=1`; `None` = too few to say.
     #[serde(default)]
     pub uptime: Option<f64>,
-    /// hl-node build identifier. **Always `null`** (not published, upstream D-9).
+    /// The node's version, an opaque string (never a number). On
+    /// `network=testnet` (beta) it is the node's reported **hardfork version**
+    /// (e.g. `"1550"`), [`None`] when the node did not report one. On mainnet
+    /// it is always [`None`] (not published, upstream D-9).
     #[serde(default)]
     pub version: Option<String>,
     /// Mempool service (§3.2). All-[`None`] = unknown; never an error when

@@ -6,7 +6,7 @@
 //! locally would turn a server `400` that *names* the problem into a
 //! client-side error that guesses at it.
 
-use crate::client::types::{AuctionStatus, Chain, Connectable, PeerState};
+use crate::client::types::{AuctionStatus, Chain, Connectable, Network, PeerState};
 use crate::error::{Error, Result};
 
 /// Sort key (§2.1). Clients send **no** `sort` unless the caller sets one, so
@@ -166,6 +166,11 @@ where
 pub struct PeerQuery {
     /// `chain`.
     pub chain: Option<Chain>,
+    /// `network` — which network's graph to read. **Testnet (beta)**, §10
+    /// D-U. [`None`] falls back to the client's
+    /// [`ClientBuilder::network`](crate::ClientBuilder::network) default and,
+    /// when that is unset too, sends nothing (the server reads mainnet).
+    pub network: Option<Network>,
     /// `cc`, CSV, upper-cased at serialization.
     pub cc: Vec<String>,
     /// `region` (`provider:region`). 🪤 Cloud-hosted peers only.
@@ -243,6 +248,7 @@ const KNOWN_PARAMS: &[&str] = &[
     "max_latency_ms",
     "max_tier",
     "min_uptime",
+    "network",
     "region",
     "role",
     "seen_within",
@@ -288,6 +294,16 @@ impl PeerQuery {
     setter! {
         /// Set `chain`.
         chain, chain, Chain
+    }
+    setter! {
+        /// Set `network` — which network's graph to read. **Testnet (beta)**.
+        ///
+        /// ```
+        /// # use hl_peers::{Network, PeerQuery};
+        /// let q = PeerQuery::new().network(Network::Testnet).cc(["jp"]);
+        /// assert_eq!(q.to_query_string().unwrap(), "cc=JP&network=testnet");
+        /// ```
+        network, network, Network
     }
     list_setter! {
         /// Set `cc`. A list, never a hand-built CSV — though a pre-joined
@@ -449,6 +465,22 @@ impl PeerQuery {
         q
     }
 
+    /// Fill `network` from a fallback (the client default) when this query
+    /// sets none; a query's own value wins.
+    pub(crate) fn with_default_network(
+        &self,
+        fallback: Option<Network>,
+    ) -> std::borrow::Cow<'_, Self> {
+        match (self.network, fallback) {
+            (None, Some(n)) => {
+                let mut q = self.clone();
+                q.network = Some(n);
+                std::borrow::Cow::Owned(q)
+            }
+            _ => std::borrow::Cow::Borrowed(self),
+        }
+    }
+
     // ------------------------------------------------------------- 2.4 ----
 
     /// Preset: `tier: [1]`.
@@ -512,7 +544,7 @@ impl PeerQuery {
     /// Only five things are refused locally. Everything else is sent, so that
     /// a server `400` naming the problem reaches the caller instead of a
     /// client-side guess. The fifth is a value outside a **closed** enum:
-    /// `chain`, `sort` and `format` are unrepresentable here by construction;
+    /// `chain`, `network`, `sort` and `format` are unrepresentable here by construction;
     /// `connectable`, `state` and `auction` refuse an `Other` member, because
     /// those types are open for *decoding* a peer but closed as a filter.
     pub fn validate(&self) -> Result<()> {
@@ -606,6 +638,9 @@ impl PeerQuery {
 
         if let Some(c) = self.chain {
             put("chain", c.as_str().to_string());
+        }
+        if let Some(n) = self.network {
+            put("network", n.as_str().to_string());
         }
         if !self.cc.is_empty() {
             put("cc", self.cc.join(",").to_uppercase());
@@ -880,6 +915,31 @@ mod tests {
         ] {
             assert_eq!(q.validate_for_facets().unwrap_err().parameter(), Some(p));
         }
+    }
+
+    #[test]
+    fn network_is_sent_only_when_set() {
+        assert_eq!(PeerQuery::new().to_query_string().unwrap(), "");
+        assert_eq!(
+            PeerQuery::new()
+                .network(Network::Testnet)
+                .to_query_string()
+                .unwrap(),
+            "network=testnet"
+        );
+        let q = PeerQuery::new().network(Network::Mainnet);
+        assert_eq!(
+            q.with_default_network(Some(Network::Testnet)).network,
+            Some(Network::Mainnet)
+        );
+        let q = PeerQuery::new();
+        assert_eq!(
+            q.with_default_network(Some(Network::Testnet)).network,
+            Some(Network::Testnet)
+        );
+        assert_eq!(q.with_default_network(None).network, None);
+        let q = PeerQuery::new().extra_param("network", "testnet");
+        assert_eq!(q.validate().unwrap_err().parameter(), Some("network"));
     }
 
     #[test]

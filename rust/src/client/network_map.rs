@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use super::query::percent_encode;
-use super::types::{AuctionStatus, Connectable, Peer};
+use super::types::{AuctionStatus, Connectable, Network, Peer};
 use crate::error::{Error, Result};
 
 /// Options for [`Client::network_map_graph`](crate::Client::network_map_graph)
@@ -52,6 +52,11 @@ pub struct NetworkMapOpts {
     /// [`PeerQuery::auction`](crate::PeerQuery::auction): closed as a filter,
     /// [`None`] is the literal `null` member (never seen in the auction).
     pub auction: Vec<Option<AuctionStatus>>,
+    /// `network` — which network's graph to draw. **Testnet (beta)**, §10
+    /// D-U. [`None`] falls back to the client's
+    /// [`ClientBuilder::network`](crate::ClientBuilder::network) default and,
+    /// when that is unset too, sends nothing (mainnet).
+    pub network: Option<Network>,
 }
 
 impl NetworkMapOpts {
@@ -118,6 +123,34 @@ impl NetworkMapOpts {
     pub fn auction<I: IntoIterator<Item = Option<AuctionStatus>>>(mut self, v: I) -> Self {
         self.auction = v.into_iter().collect();
         self
+    }
+
+    /// Set `network`. **Testnet (beta)**.
+    ///
+    /// ```
+    /// # use hl_peers::{Network, NetworkMapOpts};
+    /// let o = NetworkMapOpts::new().network(Network::Testnet).max_tier(2);
+    /// assert_eq!(o.to_query_string().unwrap(), "max_tier=2&network=testnet");
+    /// ```
+    pub fn network(mut self, v: Network) -> Self {
+        self.network = Some(v);
+        self
+    }
+
+    /// Fill `network` from the client default when unset; an explicit value
+    /// wins.
+    pub(crate) fn with_default_network(
+        &self,
+        fallback: Option<Network>,
+    ) -> std::borrow::Cow<'_, Self> {
+        match (self.network, fallback) {
+            (None, Some(n)) => {
+                let mut o = self.clone();
+                o.network = Some(n);
+                std::borrow::Cow::Owned(o)
+            }
+            _ => std::borrow::Cow::Borrowed(self),
+        }
     }
 
     /// The thin client-side validation: a negative `max_tier`, and a
@@ -201,6 +234,9 @@ impl NetworkMapOpts {
         if let Some(v) = self.max_tier {
             p.push(("max_tier", v.to_string()));
         }
+        if let Some(v) = self.network {
+            p.push(("network", v.as_str().to_string()));
+        }
         if let Some(v) = &self.operator {
             p.push(("operator", v.clone()));
         }
@@ -283,6 +319,10 @@ pub struct NetworkMapGraph {
     pub available: bool,
     /// The served snapshot is older than the staleness bound.
     pub stale: bool,
+    /// `Some("testnet")` on a `network=testnet` body (beta); [`None`] when
+    /// absent — every mainnet body. An open string.
+    #[serde(default)]
+    pub network: Option<String>,
     /// When the data was generated.
     #[serde(default)]
     pub generated_at: Option<String>,
@@ -337,6 +377,10 @@ pub struct NetworkMapSummary {
     pub available: bool,
     /// The served snapshot is older than the staleness bound.
     pub stale: bool,
+    /// `Some("testnet")` on a `network=testnet` body (beta); [`None`] when
+    /// absent — every mainnet body. An open string.
+    #[serde(default)]
+    pub network: Option<String>,
     /// When the data was generated.
     #[serde(default)]
     pub generated_at: Option<String>,

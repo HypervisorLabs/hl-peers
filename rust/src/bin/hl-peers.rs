@@ -76,6 +76,9 @@ enum Command {
     Peer {
         /// The peer's IPv4.
         ip: String,
+        /// mainnet | testnet. Testnet is beta. Unset sends nothing (mainnet).
+        #[arg(long)]
+        network: Option<String>,
     },
     /// Work on an override_gossip_config.json.
     #[command(subcommand)]
@@ -142,6 +145,10 @@ enum GossipCmd {
 struct Filters {
     #[arg(long)]
     chain: Option<String>,
+    /// mainnet | testnet: which network's graph to read. Testnet is beta.
+    /// Unset sends nothing (mainnet).
+    #[arg(long)]
+    network: Option<String>,
     #[arg(long)]
     cc: Option<String>,
     #[arg(long)]
@@ -222,6 +229,9 @@ impl Filters {
             .country(csv(&self.country));
         if let Some(c) = &self.chain {
             q = q.chain(hl_peers::Chain::parse(c)?);
+        }
+        if let Some(n) = &self.network {
+            q = q.network(hl_peers::Network::parse(n)?);
         }
         if let Some(t) = &self.tier {
             let mut tiers = Vec::new();
@@ -402,9 +412,13 @@ fn run(cli: &Cli) -> Result<(), Error> {
             println!("{}", serde_json::to_string_pretty(&f.body).unwrap());
             Ok(())
         }
-        Command::Peer { ip } => {
+        Command::Peer { ip, network } => {
+            let mut opts = hl_peers::GetPeerOpts::new();
+            if let Some(n) = network {
+                opts = opts.network(hl_peers::Network::parse(n)?);
+            }
             let client = build_client(cli)?;
-            let p = client.get_peer(ip)?;
+            let p = client.get_peer_with(ip, &opts)?;
             println!("{}", serde_json::to_string_pretty(&p.body).unwrap());
             Ok(())
         }

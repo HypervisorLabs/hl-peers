@@ -11,8 +11,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::client::{
-    Conditional, Facets, IterOpts, Jitter, NetworkMapGraph, NetworkMapOpts, NetworkMapSummary,
-    Peer, PeerEnvelope, PeerList, PeerQuery, Response, Sleeper, Transport,
+    Conditional, Facets, GetPeerOpts, IterOpts, Jitter, Network, NetworkMapGraph, NetworkMapOpts,
+    NetworkMapSummary, Peer, PeerEnvelope, PeerList, PeerQuery, Response, Sleeper, Transport,
 };
 use crate::error::{Error, Result};
 use crate::GossipConfig;
@@ -86,6 +86,12 @@ impl BlockingClientBuilder {
         self.inner = self.inner.jitter(j);
         self
     }
+    /// The default `network` for every call that does not set its own.
+    /// See [`ClientBuilder::network`](crate::ClientBuilder::network).
+    pub fn network(mut self, n: Network) -> Self {
+        self.inner = self.inner.network(n);
+        self
+    }
     /// See [`crate::ClientBuilder::clock`].
     pub fn clock(mut self, c: Arc<dyn crate::Clock>) -> Self {
         self.inner = self.inner.clock(c);
@@ -153,6 +159,11 @@ impl BlockingClient {
     /// See [`crate::Client::get_peer`].
     pub fn get_peer(&self, ip: &str) -> Result<Response<PeerEnvelope>> {
         self.runtime.block_on(self.inner.get_peer(ip))
+    }
+
+    /// See [`Client::get_peer_with`](crate::Client::get_peer_with).
+    pub fn get_peer_with(&self, ip: &str, opts: &GetPeerOpts) -> Result<Response<PeerEnvelope>> {
+        self.runtime.block_on(self.inner.get_peer_with(ip, opts))
     }
 
     /// See [`crate::Client::facets`].

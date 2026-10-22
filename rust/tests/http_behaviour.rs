@@ -8,9 +8,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use hl_peers::{
-    normalize_base_path, AuctionStatus, Client, Connectable, Error, FixedClock, Geo, IterOpts,
-    NetworkMapOpts, OnTruncate, PeerQuery, RecordingSleeper, Sort, TierFilter, DEFAULT_BASE_PATH,
-    DEFAULT_BASE_URL,
+    normalize_base_path, AuctionStatus, Chain, Client, Connectable, Error, FixedClock, Geo,
+    GetPeerOpts, IterOpts, Network, NetworkMapOpts, OnTruncate, PeerQuery, RecordingSleeper, Sort,
+    TierFilter, DEFAULT_BASE_PATH, DEFAULT_BASE_URL,
 };
 use support::{json_response, FixtureTransport, ScriptedTransport};
 
@@ -1307,6 +1307,7 @@ fn the_types_cover_exactly_the_spec_field_sets() {
         .max_latency_ms(1)
         .max_tier(1)
         .min_uptime(0.5)
+        .network(Network::Mainnet)
         .region(["aws:x"])
         .role(["r"])
         .seen_within("1h")
@@ -1346,6 +1347,7 @@ fn the_types_cover_exactly_the_spec_field_sets() {
         .label("sentry")
         .max_tier(1)
         .operator("op")
+        .network(Network::Mainnet)
         .serves_mempool([Some(true)])
         .auction([None])
         .show_unreached(true);
@@ -1375,6 +1377,10 @@ fn the_types_cover_exactly_the_spec_field_sets() {
     }
     for s in e["sort"].as_array().unwrap() {
         assert!(Sort::parse(s.as_str().unwrap()).is_ok());
+    }
+    for s in e["network"].as_array().unwrap() {
+        let n: Network = s.as_str().unwrap().parse().unwrap();
+        assert_eq!(n.as_str(), s.as_str().unwrap());
     }
 }
 
@@ -1518,4 +1524,290 @@ async fn mempool_verdicts_are_the_live_tokens() {
         .collect();
     assert!(verdicts.contains(&Some("serves")));
     assert!(verdicts.contains(&Some("connected_no_mempool")));
+}
+
+// -{66} network=testnet (beta), §10 D-U ---
+
+fn testnet_client(t: Arc<FixtureTransport>) -> Client {
+    Client::builder()
+        .base_url("https://fixtures.invalid")
+        .network(Network::Testnet)
+        .transport(t)
+        .build()
+        .unwrap()
+}
+
+#[test]
+fn network_parses_case_sensitively_and_refuses_the_rest() {
+    assert_eq!("mainnet".parse::<Network>().unwrap(), Network::Mainnet);
+    assert_eq!(Network::parse("testnet").unwrap(), Network::Testnet);
+    assert_eq!(Network::Testnet.to_string(), "testnet");
+    for bad in ["Testnet", "TESTNET", "devnet", "", "Mainnet"] {
+        match bad.parse::<Network>().unwrap_err() {
+            Error::Invalid { parameter, .. } => assert_eq!(parameter, "network", "{bad}"),
+            other => panic!("expected Invalid for {bad:?}, got {other:?}"),
+        }
+    }
+    assert_eq!(
+        Client::builder()
+            .transport(Arc::new(FixtureTransport::new()))
+            .build()
+            .unwrap()
+            .network(),
+        None
+    );
+}
+
+#[tokio::test]
+async fn the_testnet_peer_list() {
+    let t = Arc::new(FixtureTransport::new());
+    let r = client_with(t.clone())
+        .list_peers(&PeerQuery::new().network(Network::Testnet))
+        .await
+        .unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        "https://fixtures.invalid/peers?network=testnet"
+    );
+    let env = &r.body.envelope;
+    assert_eq!(env.network.as_deref(), Some("testnet"));
+    assert_eq!(Chain::parse(&env.chain).unwrap(), Chain::Testnet);
+    let versions: Vec<Option<&str>> = r.body.peers.iter().map(|p| p.version.as_deref()).collect();
+    assert_eq!(versions, [Some("1550"), Some("1550"), Some("1549"), None]);
+    let root = &r.body.peers[0];
+    assert_eq!(root.id, "192.0.2.50");
+    assert_eq!(root.cc.as_deref(), Some("JP"));
+    assert_eq!(root.asn.as_deref(), Some("AS64502"));
+    assert_eq!(root.org.as_deref(), Some("Example Cloud"));
+    assert_eq!(root.region.as_deref(), Some("aws:ap-northeast-1"));
+    assert_eq!(r.body.peers[1].cc.as_deref(), Some("US"));
+    assert_eq!(r.body.peers[1].asn.as_deref(), Some("AS64503"));
+    let unreported = &r.body.peers[3];
+    assert_eq!(unreported.tier, None);
+    assert_eq!(unreported.cc, None);
+    assert_eq!(unreported.asn, None);
+    assert_eq!(r.body.total, Some(4));
+}
+
+#[tokio::test]
+async fn the_testnet_dossier_facets_and_map() {
+    let t = Arc::new(FixtureTransport::new());
+    let c = client_with(t.clone());
+
+    let p = c
+        .get_peer_with("192.0.2.50", &GetPeerOpts::new().network(Network::Testnet))
+        .await
+        .unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        "https://fixtures.invalid/peers/192.0.2.50?network=testnet"
+    );
+    assert_eq!(p.body.envelope.network.as_deref(), Some("testnet"));
+    assert_eq!(p.body.envelope.chain, "Testnet");
+    assert_eq!(p.body.peer.version.as_deref(), Some("1550"));
+    assert_eq!(p.body.peer.cc.as_deref(), Some("JP"));
+    assert_eq!(p.body.peer.org.as_deref(), Some("Example Cloud"));
+
+    let f = c
+        .facets(Some(&PeerQuery::new().network(Network::Testnet)))
+        .await
+        .unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        "https://fixtures.invalid/peers/facets?network=testnet"
+    );
+    assert_eq!(f.body.envelope.network.as_deref(), Some("testnet"));
+    assert_eq!(f.body.envelope.chain, "Testnet");
+    let v: Vec<(&str, i64)> = f.body.facets["version"]
+        .values
+        .iter()
+        .map(|x| (x.value.as_str(), x.count))
+        .collect();
+    assert_eq!(v, [("1550", 2), ("1549", 1), ("null", 1)]);
+    assert_eq!(f.body.available("label"), Some(false));
+
+    let o = NetworkMapOpts::new().network(Network::Testnet);
+    let g = c.network_map_graph(&o).await.unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        "https://fixtures.invalid/network-map/graph?network=testnet"
+    );
+    assert_eq!(g.body.network.as_deref(), Some("testnet"));
+    assert_eq!(g.body.node_count, Some(4));
+    let nv: Vec<Option<&str>> = g.body.nodes.iter().map(|n| n.version.as_deref()).collect();
+    assert_eq!(nv, [Some("1550"), Some("1550"), Some("1549"), None]);
+    assert_eq!(g.body.nodes[2].cc.as_deref(), Some("FI"));
+    assert_eq!(g.body.cities, None);
+
+    let s = c.network_map_summary(&o).await.unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        "https://fixtures.invalid/network-map/summary?network=testnet"
+    );
+    assert_eq!(s.body.network.as_deref(), Some("testnet"));
+    assert_eq!(s.body.serves_mempool.get("null"), Some(&4));
+    assert_eq!(s.body.auction.get("null"), Some(&4));
+}
+
+#[tokio::test]
+async fn network_not_served_is_a_bad_request_naming_network() {
+    let e = scenario_client("network-not-served")
+        .list_peers(&PeerQuery::new().network(Network::Testnet))
+        .await
+        .unwrap_err();
+    match &e {
+        Error::BadRequest {
+            parameter, allowed, ..
+        } => {
+            assert_eq!(parameter.as_deref(), Some("network"));
+            assert_eq!(
+                allowed.as_deref(),
+                Some(&["mainnet".to_string(), "testnet".to_string()][..])
+            );
+        }
+        other => panic!("expected BadRequest, got {other:?}"),
+    }
+    assert_eq!(e.parameter(), Some("network"));
+}
+
+#[tokio::test]
+async fn the_client_default_network_fills_every_route_and_a_per_call_value_wins() {
+    let t = Arc::new(FixtureTransport::new());
+    let c = testnet_client(t.clone());
+    assert_eq!(c.network(), Some(Network::Testnet));
+    let base = "https://fixtures.invalid";
+
+    let r = c.list_peers(&PeerQuery::new()).await.unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers?network=testnet")
+    );
+    assert_eq!(r.body.envelope.network.as_deref(), Some("testnet"));
+    let _ = c.get_peer("192.0.2.50").await.unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers/192.0.2.50?network=testnet")
+    );
+    let _ = c.facets(None).await.unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers/facets?network=testnet")
+    );
+    let _ = c.facets(Some(&PeerQuery::new())).await.unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers/facets?network=testnet")
+    );
+    let _ = c.network_map_graph(&NetworkMapOpts::new()).await.unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/network-map/graph?network=testnet")
+    );
+    let _ = c.network_map_summary(&NetworkMapOpts::new()).await.unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/network-map/summary?network=testnet")
+    );
+    let ids: Vec<String> = c
+        .list_all_peers(&PeerQuery::new(), IterOpts::default())
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|p| p.id)
+        .collect();
+    assert_eq!(ids.len(), 4);
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers?network=testnet")
+    );
+    let _ = c.list_peers_as_gossip_config(&PeerQuery::new()).await;
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers?format=gossip_config&network=testnet")
+    );
+
+    // A per-call value wins over the client default.
+    let r = c
+        .list_peers(&PeerQuery::new().network(Network::Mainnet))
+        .await;
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers?network=mainnet")
+    );
+    drop(r);
+    let _ = c
+        .get_peer_with("192.0.2.10", &GetPeerOpts::new().network(Network::Mainnet))
+        .await;
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers/192.0.2.10?network=mainnet")
+    );
+    let _ = c
+        .network_map_graph(&NetworkMapOpts::new().network(Network::Mainnet))
+        .await;
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/network-map/graph?network=mainnet")
+    );
+    let _ = c
+        .facets(Some(&PeerQuery::new().network(Network::Mainnet)))
+        .await;
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers/facets?network=mainnet")
+    );
+}
+
+#[tokio::test]
+async fn the_mainnet_golden_no_network_key_on_any_route() {
+    let t = Arc::new(FixtureTransport::new());
+    let c = client_with(t.clone());
+    assert_eq!(c.network(), None);
+    let base = "https://fixtures.invalid";
+
+    let r = c.list_peers(&PeerQuery::new()).await.unwrap();
+    assert_eq!(t.last_url().unwrap(), format!("{base}/peers"));
+    assert_eq!(r.body.envelope.network, None);
+    let _ = c.list_peers(&PeerQuery::new().cc(["de"]).limit(5)).await;
+    assert_eq!(t.last_url().unwrap(), format!("{base}/peers?cc=DE&limit=5"));
+    let p = c.get_peer("192.0.2.10").await.unwrap();
+    assert_eq!(t.last_url().unwrap(), format!("{base}/peers/192.0.2.10"));
+    assert_eq!(p.body.envelope.network, None);
+    assert_eq!(p.body.peer.version, None);
+    let _ = c
+        .get_peer_with("192.0.2.10", &GetPeerOpts::new())
+        .await
+        .unwrap();
+    assert_eq!(t.last_url().unwrap(), format!("{base}/peers/192.0.2.10"));
+    let f = c.facets(None).await.unwrap();
+    assert_eq!(t.last_url().unwrap(), format!("{base}/peers/facets"));
+    assert_eq!(f.body.envelope.network, None);
+    let _ = c.network_map_graph(&NetworkMapOpts::new()).await;
+    assert_eq!(t.last_url().unwrap(), format!("{base}/network-map/graph"));
+    let g = c
+        .network_map_graph(&NetworkMapOpts::new().max_tier(2))
+        .await
+        .unwrap();
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/network-map/graph?max_tier=2")
+    );
+    assert_eq!(g.body.network, None);
+    let s = c.network_map_summary(&NetworkMapOpts::new()).await.unwrap();
+    assert_eq!(t.last_url().unwrap(), format!("{base}/network-map/summary"));
+    assert_eq!(s.body.network, None);
+    let _ = c.list_peers_as_gossip_config(&PeerQuery::new()).await;
+    assert_eq!(
+        t.last_url().unwrap(),
+        format!("{base}/peers?format=gossip_config")
+    );
+    let _ = c
+        .list_all_peers(&PeerQuery::new(), IterOpts::default())
+        .await;
+    assert!(t
+        .requests
+        .lock()
+        .unwrap()
+        .iter()
+        .all(|r| !r.url.contains("network=")));
 }

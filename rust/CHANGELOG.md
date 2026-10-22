@@ -2,6 +2,29 @@
 
 The contract is [`CLIENT_SPEC.md`](../CLIENT_SPEC.md).
 
+## Unreleased
+
+- **Testnet (beta)** — `network` (`CLIENT_SPEC.md` §10 D-U). A new
+  `Network` enum (`Mainnet` | `Testnet`, wire `mainnet` | `testnet`; parsing is
+  case-sensitive and an unknown value is `Error::Invalid { parameter: "network" }`).
+  It is a field and setter on `PeerQuery` (so `list_peers`, `iter_peers`,
+  `facets`, `list_peers_as_gossip_config` and `update_gossip_config` take it) and
+  on `NetworkMapOpts`; a per-call option on the new `Client::get_peer_with(ip,
+  &GetPeerOpts)` (`get_peer` is unchanged); and a client-level default,
+  `ClientBuilder::network` / `BlockingClientBuilder::network` (default unset).
+  A per-call value wins. Unset sends no `network` key, so every mainnet URL is
+  byte-identical to 1.1.0.
+- Every result exposes `network: Option<String>` (`Envelope`,
+  `NetworkMapGraph`, `NetworkMapSummary`): `Some("testnet")` on a testnet body,
+  `None` on mainnet. `Peer::version` is the node's hardfork version on testnet
+  (an opaque string), `None` on mainnet.
+- `400 network-not-served` is `Error::BadRequest` with `parameter ==
+  Some("network")` — no new error variant.
+- CLI: `--network mainnet|testnet` on `query`, `facets`, `peer` and
+  `gossip update`.
+- All additions are additive: the touched public structs were already
+  `#[non_exhaustive]`.
+
 ## 1.1.0 — 2026-10-20 — Initial release
 
 - `Client` (feature `client`, default) — the async Peer API client:

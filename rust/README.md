@@ -374,11 +374,70 @@ println!("connectable {:?} mempool {:?} auction {:?}",
 ```
 
 Options: `max_tier`, `show_unreached`, `hide_unreachable`, `connectable`
-(closed enum), `cc`, `operator`, `label`, `serves_mempool` and
-`auction`, typed and validated exactly as on `PeerQuery`. Show `attribution`
+(closed enum), `cc`, `operator`, `label`, `serves_mempool`,
+`auction` and `network` (testnet, beta — see below), typed and validated exactly as on `PeerQuery`. Show `attribution`
 wherever you show the map's geo. Same ETag cache, error mapping,
 rate-limit and `api_version` exposure as `/peers`; `available: false` is
 returned as-is.
+
+---
+
+## Testnet (beta)
+
+Every route takes an optional `network` — `Network::Mainnet` |
+`Network::Testnet` (wire `mainnet` | `testnet`). Set it per call, or once on the
+client; a per-call value wins. **Unset sends nothing**, so the server reads
+mainnet and a mainnet URL is byte-identical to before.
+
+### List testnet peers and their hardfork versions
+
+```rust,no_run
+use hl_peers::{Client, GetPeerOpts, Network, NetworkMapOpts, PeerQuery};
+
+# async fn run() -> hl_peers::Result<()> {
+// Per call:
+let client = Client::new()?;
+let page = client.list_peers(&PeerQuery::new().network(Network::Testnet)).await?;
+assert_eq!(page.body.envelope.network.as_deref(), Some("testnet")); // None on mainnet
+if page.body.envelope.available {
+    for p in &page.body.peers {
+        // `version` is the node's reported hardfork version on testnet
+        // (an opaque string, e.g. "1550"); None when it did not report one.
+        println!("{} {:?} {:?} {:?}", p.id, p.version, p.cc, p.asn);
+    }
+}
+
+// Or once, for every call that does not set its own:
+let testnet = Client::builder().network(Network::Testnet).build()?;
+let peer = testnet.get_peer("192.0.2.50").await?;               // ?network=testnet
+let graph = testnet.network_map_graph(&NetworkMapOpts::new()).await?;
+let facets = testnet.facets(None).await?;                        // `version` facet = hardfork versions
+let mainnet_peer = testnet
+    .get_peer_with("192.0.2.10", &GetPeerOpts::new().network(Network::Mainnet))
+    .await?;                                                     // per call wins
+# let _ = (peer, graph, facets, mainnet_peer);
+# Ok(()) }
+```
+
+`network` and `chain` are different questions: `network` picks which graph is
+read; `chain` filters on what the server states (a testnet body states
+`chain: "Testnet"`). `Network` parses case-sensitively — `"Testnet"` or
+`"devnet"` is `Error::Invalid { parameter: "network", .. }` before any request.
+
+Known gaps — testnet is **beta**, and the crate does nothing special about any of
+them:
+
+- a **small graph**, and **no session data** yet;
+- `blocks_behind` is **approximate**;
+- testnet **resets** often, and `available: false` for a while afterwards is
+  normal — check `available` before reading the list;
+- **operator-run nodes may be omitted**;
+- a deployment that does not serve testnet answers `400 network-not-served`,
+  surfaced as `Error::BadRequest` with `parameter == Some("network")` — no new
+  error variant, so existing matches keep compiling.
+
+CLI: `--network mainnet|testnet` on `query`, `facets`, `peer` and
+`gossip update`.
 
 ---
 
@@ -497,6 +556,8 @@ hl-peers query --auction holds_slot,bidding --country JP
 hl-peers query --cc DE --format gossip-config            # server-rendered config to stdout
 hl-peers facets --chain Mainnet --serves-mempool true,null
 hl-peers peer 192.0.2.10
+hl-peers query --network testnet --output table          # testnet (beta)
+hl-peers peer 192.0.2.50 --network testnet
 hl-peers gossip show     --path ~/override_gossip_config.json
 hl-peers gossip validate --path ~/override_gossip_config.json
 hl-peers gossip update   --path ~/override_gossip_config.json --cc DE --dry-run

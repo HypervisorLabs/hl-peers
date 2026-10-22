@@ -75,11 +75,11 @@ pub use client::blocking::{BlockingClient, BlockingClientBuilder};
 pub use client::{
     normalize_base_path, AuctionStatus, BoxFuture, Chain, CityCluster, Client, ClientBuilder,
     Conditional, Connectable, DefaultJitter, Envelope, Facet, FacetValue, Facets, Format, Geo,
-    HttpRequest, HttpResponse, IterOpts, Jitter, NetworkMapEdge, NetworkMapGraph, NetworkMapOpts,
-    NetworkMapSummary, NoJitter, OnTruncate, OperatorNodes, Peer, PeerAuction, PeerEnvelope,
-    PeerList, PeerMempool, PeerQuery, PeerState, PeerStream, RecordingSleeper, ReqwestTransport,
-    Response, Sleeper, Sort, TierCount, TierFilter, TokioSleeper, Transport, DEFAULT_BASE_PATH,
-    DEFAULT_BASE_URL,
+    GetPeerOpts, HttpRequest, HttpResponse, IterOpts, Jitter, Network, NetworkMapEdge,
+    NetworkMapGraph, NetworkMapOpts, NetworkMapSummary, NoJitter, OnTruncate, OperatorNodes, Peer,
+    PeerAuction, PeerEnvelope, PeerList, PeerMempool, PeerQuery, PeerState, PeerStream,
+    RecordingSleeper, ReqwestTransport, Response, Sleeper, Sort, TierCount, TierFilter,
+    TokioSleeper, Transport, DEFAULT_BASE_PATH, DEFAULT_BASE_URL,
 };
 #[cfg(feature = "client")]
 pub use update::{update_gossip_config, update_gossip_config_from_peers, UpdateOpts, UpdateResult};

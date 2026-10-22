@@ -43,9 +43,41 @@ pub use retry::{DefaultJitter, Jitter, NoJitter, RecordingSleeper, Sleeper, Toki
 pub use stream::{IterOpts, OnTruncate, PeerStream};
 pub use transport::{BoxFuture, HttpRequest, HttpResponse, ReqwestTransport, Transport};
 pub use types::{
-    AuctionStatus, Chain, Conditional, Connectable, Envelope, Facet, FacetValue, Facets, Peer,
-    PeerAuction, PeerEnvelope, PeerList, PeerMempool, PeerState, Response,
+    AuctionStatus, Chain, Conditional, Connectable, Envelope, Facet, FacetValue, Facets, Network,
+    Peer, PeerAuction, PeerEnvelope, PeerList, PeerMempool, PeerState, Response,
 };
+
+/// Per-call options for [`Client::get_peer_with`] (§4.3).
+///
+/// Every field unset is exactly [`Client::get_peer`].
+///
+/// ```
+/// # use hl_peers::{GetPeerOpts, Network};
+/// let o = GetPeerOpts::new().network(Network::Testnet);
+/// assert_eq!(o.network, Some(Network::Testnet));
+/// ```
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct GetPeerOpts {
+    /// `network` — which network's graph to look the peer up in. **Testnet
+    /// (beta)**. [`None`] falls back to the client's
+    /// [`ClientBuilder::network`] default and, when that is unset too, sends
+    /// no query string at all (mainnet).
+    pub network: Option<Network>,
+}
+
+impl GetPeerOpts {
+    /// Every option unset.
+    pub fn new() -> Self {
+        GetPeerOpts::default()
+    }
+
+    /// Set `network`.
+    pub fn network(mut self, v: Network) -> Self {
+        self.network = Some(v);
+        self
+    }
+}
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -128,6 +160,7 @@ struct Inner {
     sleeper: Arc<dyn Sleeper>,
     jitter: Arc<dyn Jitter>,
     clock: Arc<dyn crate::Clock>,
+    network: Option<Network>,
 }
 
 /// The Peer API client (§1).
@@ -169,6 +202,7 @@ pub struct ClientBuilder {
     sleeper: Option<Arc<dyn Sleeper>>,
     jitter: Option<Arc<dyn Jitter>>,
     clock: Option<Arc<dyn crate::Clock>>,
+    network: Option<Network>,
 }
 
 impl std::fmt::Debug for ClientBuilder {
@@ -199,6 +233,7 @@ impl Default for ClientBuilder {
             sleeper: None,
             jitter: None,
             clock: None,
+            network: None,
         }
     }
 }
@@ -302,6 +337,17 @@ impl ClientBuilder {
         self
     }
 
+    /// The default `network` for every call that does not set its own
+    /// (§1, §10 D-U). **Testnet (beta).** Default: unset, which sends no
+    /// `network` key at all, so the server's default (mainnet) governs and
+    /// every mainnet URL is byte-identical to a 1.1 request. A per-call value
+    /// ([`PeerQuery::network`], [`NetworkMapOpts::network`],
+    /// [`GetPeerOpts::network`]) wins.
+    pub fn network(mut self, network: Network) -> Self {
+        self.network = Some(network);
+        self
+    }
+
     /// Inject the [`Clock`](crate::Clock) §5.2 resolves an HTTP-date
     /// `Retry-After` against. The same trait §6.6 uses for `.bak` names, so a
     /// test injects one instant and both are deterministic.
@@ -361,6 +407,7 @@ impl ClientBuilder {
                     .jitter
                     .unwrap_or_else(|| Arc::new(DefaultJitter::default())),
                 clock: self.clock.unwrap_or_else(|| Arc::new(crate::SystemClock)),
+                network: self.network,
             }),
         })
     }
@@ -403,6 +450,12 @@ impl Client {
         self.inner.max_retries
     }
 
+    /// The client-level default `network` ([`ClientBuilder::network`]);
+    /// [`None`] = unset (nothing is sent, mainnet).
+    pub fn network(&self) -> Option<Network> {
+        self.inner.network
+    }
+
     /// The polling floor this client enforces.
     pub fn min_poll_interval(&self) -> Duration {
         self.inner.min_poll_interval
@@ -418,6 +471,7 @@ impl Client {
     /// [`Envelope::available`] before [`Envelope::stale`].
     pub async fn list_peers(&self, query: &PeerQuery) -> Result<Response<PeerList>> {
         refuse_gossip_config_format(query)?;
+        let query = query.with_default_network(self.inner.network);
         self.get_json(PEERS_PATH, &query.to_query_string()?, None)
             .await
             .map(|c| match c {
@@ -436,6 +490,7 @@ impl Client {
         if_none_match: &str,
     ) -> Result<Conditional<PeerList>> {
         refuse_gossip_config_format(query)?;
+        let query = query.with_default_network(self.inner.network);
         self.get_json(PEERS_PATH, &query.to_query_string()?, Some(if_none_match))
             .await
     }
@@ -482,7 +537,10 @@ impl Client {
         &self,
         query: &PeerQuery,
     ) -> Result<Response<crate::GossipConfig>> {
-        let q = query.clone().format(Format::GossipConfig);
+        let q = query
+            .with_default_network(self.inner.network)
+            .into_owned()
+            .format(Format::GossipConfig);
         let raw = self
             .get_raw(PEERS_PATH, &q.to_query_string()?, None)
             .await?;
@@ -529,7 +587,11 @@ impl Client {
     /// The whole directory is ~900 nodes, which is 18 anonymous pages at
     /// `limit=50`.
     pub fn iter_peers(&self, query: &PeerQuery, opts: IterOpts) -> PeerStream {
-        PeerStream::new(self.clone(), query.clone(), opts)
+        PeerStream::new(
+            self.clone(),
+            query.with_default_network(self.inner.network).into_owned(),
+            opts,
+        )
     }
 
     /// Eager convenience over [`Client::iter_peers`], with the same guard.
@@ -547,6 +609,29 @@ impl Client {
     /// a well-formed IPv4 that appears in no source is a `404`. IPv6 is
     /// rejected locally: the API is IPv4-only.
     pub async fn get_peer(&self, ip: &str) -> Result<Response<PeerEnvelope>> {
+        self.get_peer_with(ip, &GetPeerOpts::default()).await
+    }
+
+    /// [`Client::get_peer`] with per-call options — today only `network`
+    /// (**Testnet (beta)**, §4.3). `network` is the only query parameter this
+    /// route takes; unset (here and on the client) sends none.
+    ///
+    /// ```no_run
+    /// # async fn run() -> hl_peers::Result<()> {
+    /// use hl_peers::{Client, GetPeerOpts, Network};
+    /// let client = Client::new()?;
+    /// let r = client
+    ///     .get_peer_with("192.0.2.50", &GetPeerOpts::new().network(Network::Testnet))
+    ///     .await?;
+    /// println!("hardfork version: {:?}", r.body.peer.version);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_peer_with(
+        &self,
+        ip: &str,
+        opts: &GetPeerOpts,
+    ) -> Result<Response<PeerEnvelope>> {
         if !crate::gossip_is_ipv4(ip) {
             let reason = if ip.contains(':') {
                 "the peer API is IPv4-only; an IPv6 literal is out of contract".to_string()
@@ -556,7 +641,11 @@ impl Client {
             return Err(Error::invalid("ip", reason));
         }
         let path = format!("{PEERS_PATH}/{}", query::percent_encode(ip));
-        self.get_json(&path, "", None).await.map(|c| match c {
+        let qs = match opts.network.or(self.inner.network) {
+            Some(n) => format!("network={}", n.as_str()),
+            None => String::new(),
+        };
+        self.get_json(&path, &qs, None).await.map(|c| match c {
             Conditional::Modified(r) => r,
             Conditional::NotModified { .. } => unreachable!("no caller validator was sent"),
         })
@@ -575,12 +664,13 @@ impl Client {
     /// `values` under `available: true` means it is collected and nothing
     /// matches. Use [`Facets::available`] to pre-check a filter.
     pub async fn facets(&self, query: Option<&PeerQuery>) -> Result<Response<Facets>> {
-        let qs = match query {
-            Some(q) => {
+        let qs = match (query, self.inner.network) {
+            (Some(q), fallback) => {
                 q.validate_for_facets()?;
-                q.to_query_string()?
+                q.with_default_network(fallback).to_query_string()?
             }
-            None => String::new(),
+            (None, Some(n)) => PeerQuery::new().network(n).to_query_string()?,
+            (None, None) => String::new(),
         };
         self.get_json(FACETS_PATH, &qs, None)
             .await
@@ -600,6 +690,7 @@ impl Client {
         &self,
         opts: &NetworkMapOpts,
     ) -> Result<Response<NetworkMapGraph>> {
+        let opts = opts.with_default_network(self.inner.network);
         self.get_json(NETWORK_MAP_GRAPH_PATH, &opts.to_query_string()?, None)
             .await
             .map(|c| match c {
@@ -616,6 +707,7 @@ impl Client {
         &self,
         opts: &NetworkMapOpts,
     ) -> Result<Response<NetworkMapSummary>> {
+        let opts = opts.with_default_network(self.inner.network);
         self.get_json(NETWORK_MAP_SUMMARY_PATH, &opts.to_query_string()?, None)
             .await
             .map(|c| match c {

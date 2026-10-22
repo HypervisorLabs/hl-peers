@@ -16,9 +16,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use hl_peers::{
-    AuctionStatus, Candidate, Chain, Client, Connectable, Error, FixedClock, Geo, GossipConfig,
-    IterOpts, MergeMode, MergeOpts, NetworkMapOpts, NoJitter, Peer, PeerQuery, PeerState,
-    RecordingSleeper, SaveOpts, Sort, TierFilter, Warning,
+    AuctionStatus, Candidate, Chain, Client, Connectable, Error, FixedClock, Geo, GetPeerOpts,
+    GossipConfig, IterOpts, MergeMode, MergeOpts, Network, NetworkMapOpts, NoJitter, Peer,
+    PeerQuery, PeerState, RecordingSleeper, SaveOpts, Sort, TierFilter, Warning,
 };
 use serde_json::{json, Map, Value};
 
@@ -686,6 +686,7 @@ fn build_query(spec: &Map<String, Value>) -> Result<PeerQuery, Fail> {
         let v = &spec[name];
         match name.as_str() {
             "chain" => q = q.chain(Chain::parse(&coerce_str(v, "chain")?)?),
+            "network" => q = q.network(Network::parse(&coerce_str(v, "network")?)?),
             "cc" => q = q.cc(csv_items(v, "cc")?),
             "region" => q = q.region(csv_items(v, "region")?),
             "asn" => q = q.asn(csv_items(v, "asn")?),
@@ -860,6 +861,7 @@ fn build_network_map_opts(spec: &Map<String, Value>) -> Result<NetworkMapOpts, F
             "cc" => o = o.cc(coerce_str(v, "cc")?),
             "operator" => o = o.operator(coerce_str(v, "operator")?),
             "label" => o = o.label(coerce_str(v, "label")?),
+            "network" => o = o.network(Network::parse(&coerce_str(v, "network")?)?),
             "serves_mempool" => o = o.serves_mempool(serves_mempool_members(v)?),
             "auction" => {
                 o = o.auction(
@@ -946,18 +948,27 @@ fn envelope_payload(env: &hl_peers::Envelope) -> Value {
         "available": env.available,
         "stale": env.stale,
         "chain": env.chain,
+        "network": env.network,
         "generated_at": env.generated_at,
         "next_sweep_at": env.next_sweep_at,
         "attribution": env.attribution,
     })
 }
 
-/// `[[id, state, tier, city], …]`.
+/// `[[id, state, tier, city, version], …]`.
 fn rows(peers: &[Peer]) -> Value {
     Value::Array(
         peers
             .iter()
-            .map(|p| json!([p.id, p.state.as_ref().map(|s| s.as_str()), p.tier, p.city]))
+            .map(|p| {
+                json!([
+                    p.id,
+                    p.state.as_ref().map(|s| s.as_str()),
+                    p.tier,
+                    p.city,
+                    p.version
+                ])
+            })
             .collect(),
     )
 }
@@ -1118,6 +1129,7 @@ fn run_http(runtime: &tokio::runtime::Runtime, req: &Value) -> Value {
                     "unreached": g.unreached,
                     "truncated": g.truncated,
                     "node_cities": g.nodes.iter().map(|n| n.city.clone()).collect::<Vec<Option<String>>>(),
+                    "node_versions": g.nodes.iter().map(|n| n.version.clone()).collect::<Vec<Option<String>>>(),
                     "cities": cities(&g.cities),
                     "attribution": g.attribution,
                     "operator_nodes_count": g.operator_nodes.count,
@@ -1125,6 +1137,7 @@ fn run_http(runtime: &tokio::runtime::Runtime, req: &Value) -> Value {
                         "version": g.version,
                         "available": g.available,
                         "stale": g.stale,
+                        "network": g.network,
                         "generated_at": g.generated_at,
                     }),
                     "api_version": r.api_version,
@@ -1153,6 +1166,7 @@ fn run_http(runtime: &tokio::runtime::Runtime, req: &Value) -> Value {
                         "version": g.version,
                         "available": g.available,
                         "stale": g.stale,
+                        "network": g.network,
                         "generated_at": g.generated_at,
                     }),
                     "api_version": r.api_version,
@@ -1180,7 +1194,11 @@ fn run_http(runtime: &tokio::runtime::Runtime, req: &Value) -> Value {
                 Some(ip) => ip.to_string(),
                 None => return harness_error("get_peer has no ip"),
             };
-            runtime.block_on(client.get_peer(&ip)).map(|r| {
+            let opts = match query.network {
+                Some(n) => GetPeerOpts::new().network(n),
+                None => GetPeerOpts::new(),
+            };
+            runtime.block_on(client.get_peer_with(&ip, &opts)).map(|r| {
                 json!({
                     "ok": true,
                     "status": r.status,
