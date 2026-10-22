@@ -150,3 +150,16 @@ statuses retry, and what the caller finally gets.
 from `CLIENT_SPEC.md` which is right; where the spec is silent, decide, **write
 it into the spec**, add a case to `tools/gen_fixtures.py` so the shared suite
 pins it too. A fix that lives only here is a fix the next change will undo.
+
+- **`network` (testnet, beta; `CLIENT_SPEC.md` §2.1, §4.3, §4.4, §4.8).** Every
+  `http` op passes the programme's `query.network` (when present) to the client:
+  as the builder field on `list_peers` / `iter_peers` / `facets` /
+  `list_peers_as_gossip_config`, as the per-call option on `get_peer` and
+  `/network-map/*`. A value outside `mainnet` | `testnet` is the client-side
+  `Invalid{parameter: "network"}` before any request, on every op. `query_url`
+  takes `network` like any other builder field.
+- `envelope` (peers endpoints and `/network-map/*`) adds `"network"` (the
+  body's `network`, or null when absent — every mainnet body).
+- `list_peers` / `get_peer` `"rows"` become `[id, state, tier, city, version]`;
+  `network_map_graph` adds `"node_versions": [version, …]` in `peer_ids` order.
+  `version` is the decoded string or null.

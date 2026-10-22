@@ -1,0 +1,220 @@
+{
+  "name": "network_map_graph_testnet",
+  "description": "/network-map/graph?network=testnet — the testnet graph; nodes carry `version` (hardfork version) and geo/ASN. No city positions.",
+  "request": {
+    "method": "GET",
+    "path": "/network-map/graph",
+    "query": {
+      "network": "testnet"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-6e16c521e0e73f80\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "operator_nodes": {
+        "count": null
+      },
+      "stale": false,
+      "generated_at": "2026-09-21T02:35:00Z",
+      "node_count": 4,
+      "edge_count": 2,
+      "tier_count": 2,
+      "unreached": 1,
+      "tiers": [
+        {
+          "tier": 0,
+          "count": 1
+        },
+        {
+          "tier": 1,
+          "count": 2
+        }
+      ],
+      "network": "testnet",
+      "truncated": false,
+      "nodes": [
+        {
+          "id": "192.0.2.50",
+          "tier": 0,
+          "state": "responsive",
+          "role": null,
+          "cc": "JP",
+          "cc_confidence": "high",
+          "cc_source": "cloud-range",
+          "region": "aws:ap-northeast-1",
+          "asn": "AS64502",
+          "org": "Example Cloud",
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 0,
+          "out_deg": 4,
+          "latest_height": 744212345,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "no",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": "1550",
+          "mempool": {
+            "serves": null,
+            "last_checked": null,
+            "verdict": null,
+            "first_frame_ms": null,
+            "source": null
+          },
+          "auction": {
+            "status": null,
+            "slot": null,
+            "since": null,
+            "last_bid_at": null
+          }
+        },
+        {
+          "id": "198.51.100.60",
+          "tier": 1,
+          "state": "responsive",
+          "role": null,
+          "cc": "US",
+          "cc_confidence": "medium",
+          "cc_source": "db",
+          "region": null,
+          "asn": "AS64503",
+          "org": "Example Hosting US",
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 1,
+          "out_deg": 0,
+          "latest_height": 744212345,
+          "blocks_behind": 0,
+          "live": true,
+          "connectable": "yes",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": "1550",
+          "mempool": {
+            "serves": null,
+            "last_checked": null,
+            "verdict": null,
+            "first_frame_ms": null,
+            "source": null
+          },
+          "auction": {
+            "status": null,
+            "slot": null,
+            "since": null,
+            "last_bid_at": null
+          }
+        },
+        {
+          "id": "203.0.113.70",
+          "tier": 1,
+          "state": "responsive",
+          "role": null,
+          "cc": "FI",
+          "cc_confidence": "low",
+          "cc_source": "db",
+          "region": null,
+          "asn": "AS64500",
+          "org": "Example Hosting",
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 1,
+          "out_deg": 0,
+          "latest_height": 744212342,
+          "blocks_behind": 3,
+          "live": true,
+          "connectable": "yes",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": 0.97,
+          "version": "1549",
+          "mempool": {
+            "serves": null,
+            "last_checked": null,
+            "verdict": null,
+            "first_frame_ms": null,
+            "source": null
+          },
+          "auction": {
+            "status": null,
+            "slot": null,
+            "since": null,
+            "last_bid_at": null
+          }
+        },
+        {
+          "id": "203.0.113.71",
+          "tier": null,
+          "state": "listening",
+          "role": null,
+          "cc": null,
+          "cc_confidence": null,
+          "cc_source": null,
+          "region": null,
+          "asn": null,
+          "org": null,
+          "city": null,
+          "operator": null,
+          "name": null,
+          "in_deg": 1,
+          "out_deg": 0,
+          "latest_height": null,
+          "blocks_behind": null,
+          "live": false,
+          "connectable": "unknown",
+          "labels": [],
+          "feeders": [],
+          "last_seen": "2026-09-21T02:34:58Z",
+          "uptime": null,
+          "version": null,
+          "mempool": {
+            "serves": null,
+            "last_checked": null,
+            "verdict": null,
+            "first_frame_ms": null,
+            "source": null
+          },
+          "auction": {
+            "status": null,
+            "slot": null,
+            "since": null,
+            "last_bid_at": null
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "192.0.2.50",
+          "to": "198.51.100.60",
+          "span": 1
+        },
+        {
+          "from": "192.0.2.50",
+          "to": "203.0.113.70",
+          "span": 1
+        }
+      ]
+    }
+  }
+}

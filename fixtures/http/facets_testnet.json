@@ -1,0 +1,106 @@
+{
+  "name": "facets_testnet",
+  "description": "Facets over the testnet graph: the `version` facet counts hardfork versions; labels and signals are not collected on testnet.",
+  "request": {
+    "method": "GET",
+    "path": "/peers/facets",
+    "query": {
+      "network": "testnet"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-578fe57a1b76e308\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "stale": false,
+      "chain": "Testnet",
+      "generated_at": "2026-09-21T02:35:00Z",
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0",
+      "network": "testnet",
+      "total": 4,
+      "facets": {
+        "tier": {
+          "available": true,
+          "values": [
+            {
+              "value": "0",
+              "count": 1
+            },
+            {
+              "value": "1",
+              "count": 2
+            },
+            {
+              "value": "null",
+              "count": 1
+            }
+          ]
+        },
+        "cc": {
+          "available": true,
+          "values": [
+            {
+              "value": "FI",
+              "count": 1
+            },
+            {
+              "value": "JP",
+              "count": 1
+            },
+            {
+              "value": "US",
+              "count": 1
+            }
+          ]
+        },
+        "version": {
+          "available": true,
+          "values": [
+            {
+              "value": "1550",
+              "count": 2
+            },
+            {
+              "value": "1549",
+              "count": 1
+            },
+            {
+              "value": "null",
+              "count": 1
+            }
+          ]
+        },
+        "label": {
+          "available": false,
+          "values": []
+        },
+        "serves_mempool": {
+          "available": false,
+          "values": []
+        },
+        "auction": {
+          "available": false,
+          "values": []
+        }
+      },
+      "geo_coverage": {
+        "peers": 4,
+        "asn": 0.75,
+        "cc": 0.75,
+        "region": 0.25
+      }
+    }
+  }
+}

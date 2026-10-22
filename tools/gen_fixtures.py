@@ -477,6 +477,96 @@ def http_fixtures():
                 "values list under available:true means collected-and-nothing-matches.",
                 "/peers/facets", {}, facets_body))
 
+    # --- network=testnet (beta) -------------------------------------------
+    # The same shapes as mainnet. A testnet body adds "network": "testnet" and
+    # states chain Testnet; each row's `version` is the node's reported hardfork
+    # version (null when the node did not report one), geo/ASN as on mainnet, no
+    # operator labels, and the mempool / auction signals are the unknown shape.
+    def tn_peer(ip, version, tier=1, cc="DE", **kw):
+        r = peer(ip, tier=tier, cc=cc, **kw)
+        r["version"] = version
+        r["latest_height"] = 744212345 - (r["blocks_behind"] or 0)
+        return r
+
+    TN = {"chain": "Testnet", "network": "testnet"}
+    tn_root = tn_peer("192.0.2.50", "1550", tier=0, cc="JP", in_deg=0, out_deg=4,
+                      asn="AS64502", org="Example Cloud", cc_confidence="high",
+                      cc_source="cloud-range", connectable="no")
+    tn_root["region"] = "aws:ap-northeast-1"
+    tn_a = tn_peer("198.51.100.60", "1550", tier=1, cc="US", in_deg=1, out_deg=0,
+                   asn="AS64503", org="Example Hosting US")
+    tn_b = tn_peer("203.0.113.70", "1549", tier=1, cc="FI", in_deg=1, out_deg=0,
+                   behind=3, cc_confidence="low")
+    tn_c = tn_peer("203.0.113.71", None, tier=None, cc=None, in_deg=1, out_deg=0,
+                   asn=None, org=None, connectable="unknown", state="listening",
+                   uptime=None)
+    tn_c["latest_height"] = None
+    tn_c["blocks_behind"] = None
+    tn_c["live"] = False
+    tn_rows = [tn_root, tn_a, tn_b, tn_c]
+    f.append(ok("peers_testnet",
+                "network=testnet (beta) — the testnet peer graph. Same row shape as "
+                "mainnet; `version` is the node's reported hardfork version (null when "
+                "not reported), geo/ASN as on mainnet, signals unknown.",
+                P, {"network": "testnet"},
+                peer_list(tn_rows, total=4, **TN)))
+    f.append(ok("peer_found_testnet",
+                "One testnet peer, network=testnet: the dossier carries the hardfork "
+                "version and the geo/ASN profile.",
+                "/peers/192.0.2.50", {"network": "testnet"},
+                dict(envelope(**TN), peer=tn_root)))
+    tn_facets = dict(envelope(**TN))
+    tn_facets.pop("next_sweep_at")
+    tn_facets["total"] = 4
+    tn_facets["facets"] = {
+        "tier": {"available": True, "values": [
+            {"value": "0", "count": 1}, {"value": "1", "count": 2},
+            {"value": "null", "count": 1}]},
+        "cc": {"available": True, "values": [
+            {"value": "FI", "count": 1}, {"value": "JP", "count": 1},
+            {"value": "US", "count": 1}]},
+        "version": {"available": True, "values": [
+            {"value": "1550", "count": 2}, {"value": "1549", "count": 1},
+            {"value": "null", "count": 1}]},
+        "label": {"available": False, "values": []},
+        "serves_mempool": {"available": False, "values": []},
+        "auction": {"available": False, "values": []},
+    }
+    tn_facets["geo_coverage"] = {"peers": 4, "asn": 0.75, "cc": 0.75, "region": 0.25}
+    f.append(ok("facets_testnet",
+                "Facets over the testnet graph: the `version` facet counts hardfork "
+                "versions; labels and signals are not collected on testnet.",
+                "/peers/facets", {"network": "testnet"}, tn_facets))
+    tn_env = {"version": "v1", "available": True, "operator_nodes": {"count": None},
+              "stale": False, "generated_at": GEN_AT, "node_count": 4, "edge_count": 2,
+              "tier_count": 2, "unreached": 1,
+              "tiers": [{"tier": 0, "count": 1}, {"tier": 1, "count": 2}],
+              "network": "testnet"}
+    tn_edges = [{"from": "192.0.2.50", "to": "198.51.100.60", "span": 1},
+                {"from": "192.0.2.50", "to": "203.0.113.70", "span": 1}]
+    f.append(ok("network_map_graph_testnet",
+                "/network-map/graph?network=testnet — the testnet graph; nodes carry "
+                "`version` (hardfork version) and geo/ASN. No city positions.",
+                "/network-map/graph", {"network": "testnet"},
+                dict(tn_env, truncated=False, nodes=tn_rows, edges=tn_edges)))
+    f.append(ok("network_map_summary_testnet",
+                "/network-map/summary?network=testnet — the signals are unknown on "
+                "testnet, so serves_mempool and auction count everything as null.",
+                "/network-map/summary", {"network": "testnet"},
+                dict(tn_env, connectable={"yes": 2, "no": 1, "unknown": 1},
+                     serves_mempool={"true": 0, "false": 0, "null": 4},
+                     auction={"holds_slot": 0, "bidding": 0, "bid_before": 0, "null": 4})))
+    f.append(problem("error_400_network_not_served",
+                     "network=testnet while the deployment does not serve testnet: a 400 "
+                     "`network-not-served`, never a mainnet answer. Clients map it to "
+                     "BadRequest with parameter `network` (CLIENT_SPEC §10 D-U).",
+                     P, {"network": "testnet"}, 400,
+                     {"type": "https://api.hypervisor.gg/problems/network-not-served",
+                      "title": "Invalid parameter", "status": 400,
+                      "detail": "network=testnet is not served yet",
+                      "parameter": "network", "allowed": ["mainnet", "testnet"]},
+                     req_headers={"X-Mock-Scenario": "network-not-served"}))
+
     # --- errors -----------------------------------------------------------
     f.append(problem("error_400_filter_unavailable",
                      "The attribute is not collected. An empty list would have lied.",

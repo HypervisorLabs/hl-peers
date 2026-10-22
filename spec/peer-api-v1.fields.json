@@ -46,6 +46,7 @@
     "available",
     "chain",
     "generated_at",
+    "network",
     "next_sweep_at",
     "stale",
     "version"
@@ -56,6 +57,7 @@
     "chain",
     "count",
     "generated_at",
+    "network",
     "next_cursor",
     "next_sweep_at",
     "peers",
@@ -70,6 +72,7 @@
     "facets",
     "generated_at",
     "geo_coverage",
+    "network",
     "next_sweep_at",
     "stale",
     "total",
@@ -92,6 +95,7 @@
     "max_latency_ms",
     "max_tier",
     "min_uptime",
+    "network",
     "region",
     "role",
     "seen_within",
@@ -116,6 +120,7 @@
     "max_latency_ms",
     "max_tier",
     "min_uptime",
+    "network",
     "region",
     "role",
     "seen_within",
@@ -132,6 +137,7 @@
     "hide_unreachable",
     "label",
     "max_tier",
+    "network",
     "operator",
     "serves_mempool",
     "show_unreached"
@@ -143,6 +149,7 @@
     "edge_count",
     "edges",
     "generated_at",
+    "network",
     "node_count",
     "nodes",
     "operator_nodes",
@@ -161,6 +168,7 @@
     "connectable",
     "edge_count",
     "generated_at",
+    "network",
     "node_count",
     "operator_nodes",
     "serves_mempool",
@@ -224,6 +232,10 @@
     "chain": [
       "Mainnet",
       "Testnet"
+    ],
+    "network": [
+      "mainnet",
+      "testnet"
     ]
   }
 }

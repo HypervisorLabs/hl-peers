@@ -1,0 +1,74 @@
+{
+  "name": "peer_found_testnet",
+  "description": "One testnet peer, network=testnet: the dossier carries the hardfork version and the geo/ASN profile.",
+  "request": {
+    "method": "GET",
+    "path": "/peers/192.0.2.50",
+    "query": {
+      "network": "testnet"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-7a0f148ca401f6f9\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "stale": false,
+      "chain": "Testnet",
+      "generated_at": "2026-09-21T02:35:00Z",
+      "next_sweep_at": "2026-09-21T02:40:00Z",
+      "attribution": "IP address data is powered by IPinfo (https://ipinfo.io), CC BY-SA 4.0",
+      "network": "testnet",
+      "peer": {
+        "id": "192.0.2.50",
+        "tier": 0,
+        "state": "responsive",
+        "role": null,
+        "cc": "JP",
+        "cc_confidence": "high",
+        "cc_source": "cloud-range",
+        "region": "aws:ap-northeast-1",
+        "asn": "AS64502",
+        "org": "Example Cloud",
+        "city": null,
+        "operator": null,
+        "name": null,
+        "in_deg": 0,
+        "out_deg": 4,
+        "latest_height": 744212345,
+        "blocks_behind": 0,
+        "live": true,
+        "connectable": "no",
+        "labels": [],
+        "feeders": [],
+        "last_seen": "2026-09-21T02:34:58Z",
+        "uptime": 0.97,
+        "version": "1550",
+        "mempool": {
+          "serves": null,
+          "last_checked": null,
+          "verdict": null,
+          "first_frame_ms": null,
+          "source": null
+        },
+        "auction": {
+          "status": null,
+          "slot": null,
+          "since": null,
+          "last_bid_at": null
+        }
+      }
+    }
+  }
+}

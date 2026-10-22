@@ -93,6 +93,7 @@ def build():
             "sort": spec["components"]["parameters"]["Sort"]["schema"]["enum"],
             "format": spec["components"]["parameters"]["Format"]["schema"]["enum"],
             "chain": spec["components"]["parameters"]["Chain"]["schema"]["enum"],
+            "network": spec["components"]["parameters"]["Network"]["schema"]["enum"],
         },
     }
 

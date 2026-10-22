@@ -237,8 +237,9 @@ filled in:
 `network=testnet` while the producer does not serve it is a `400`
 (`network-not-served`), and any other value is a `400` too — never a
 silently-mainnet answer. The 1.1 clients validate their query arguments and do
-not know `network` yet; until a client release adds it, call the HTTP API
-directly for testnet.
+not know `network`; the next client release adds it (a `network` option on
+every call and a client-wide default, see each client's README). Until that
+release, call the HTTP API directly for testnet.
 
 ---
 

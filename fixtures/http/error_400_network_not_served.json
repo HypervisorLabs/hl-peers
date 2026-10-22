@@ -1,0 +1,36 @@
+{
+  "name": "error_400_network_not_served",
+  "description": "network=testnet while the deployment does not serve testnet: a 400 `network-not-served`, never a mainnet answer. Clients map it to BadRequest with parameter `network` (CLIENT_SPEC §10 D-U).",
+  "request": {
+    "method": "GET",
+    "path": "/peers",
+    "query": {
+      "network": "testnet"
+    },
+    "headers": {
+      "X-Mock-Scenario": "network-not-served"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "type": "https://api.hypervisor.gg/problems/network-not-served",
+      "title": "Invalid parameter",
+      "status": 400,
+      "detail": "network=testnet is not served yet",
+      "parameter": "network",
+      "allowed": [
+        "mainnet",
+        "testnet"
+      ]
+    }
+  }
+}

@@ -728,18 +728,23 @@ components:
 
         **Testnet (beta).** Known gaps: the testnet graph is small (a few
         dozen nodes, most of which report few or no children), there is no
-        session data yet, `blocks_behind` is approximate, and testnet is reset
-        and upgraded often, so peers age out rather than persist.
-        Operator-run nodes may be omitted.
+        session data yet, `blocks_behind` is approximate, and testnet resets
+        and upgrades often, so nodes age out rather than persist. Operator-run
+        nodes may be omitted.
 
-        A testnet response has the same shape, adds `"network": "testnet"` and
-        states `chain: Testnet`; a mainnet response is unchanged. Testnet rows
-        carry `version` (the node's reported hardfork version; `null` on
-        mainnet) and the same geo/ASN fields as mainnet (`cc`,
-        `cc_confidence`, `cc_source`, `region`, `asn`, `org`). Operator
-        labels and the mempool and auction signals are not available on
-        testnet. Any other value, or `testnet` while it is not served, is a
-        `400` problem (`invalid-filter-value` / `network-not-served`).
+        A testnet row carries the scan-observable fields plus two that mainnet
+        rows do not fill the same way: `version` (the node's reported
+        **hardfork version**, e.g. `"1550"`; mainnet rows keep
+        `version: null`) and the same public geo/ASN profile as mainnet rows
+        (`cc`, `cc_confidence`, `cc_source`, `region`, `asn`, `org`; see
+        `/peers/facets` `geo_coverage`). No operator labels, no mempool or
+        auction signals.
+
+        A testnet response adds `"network": "testnet"` and states
+        `chain: Testnet`; a mainnet response is unchanged. Any other value, or
+        `testnet` while it is not served, is a `400` problem
+        (`invalid-filter-value` / `network-not-served`), never a
+        silently-mainnet answer.
       schema:
         type: string
         enum: [mainnet, testnet]

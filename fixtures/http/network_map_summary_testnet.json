@@ -1,0 +1,65 @@
+{
+  "name": "network_map_summary_testnet",
+  "description": "/network-map/summary?network=testnet — the signals are unknown on testnet, so serves_mempool and auction count everything as null.",
+  "request": {
+    "method": "GET",
+    "path": "/network-map/summary",
+    "query": {
+      "network": "testnet"
+    },
+    "headers": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "ETag": "\"sha256-789f7a94eb0aecbe\"",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+      "API-Version": "1",
+      "RateLimit-Limit": "20",
+      "RateLimit-Remaining": "17",
+      "RateLimit-Reset": "42",
+      "RateLimit-Policy": "\"anon-min\";q=20;w=60, \"anon-day\";q=2000;w=86400"
+    },
+    "body": {
+      "version": "v1",
+      "available": true,
+      "operator_nodes": {
+        "count": null
+      },
+      "stale": false,
+      "generated_at": "2026-09-21T02:35:00Z",
+      "node_count": 4,
+      "edge_count": 2,
+      "tier_count": 2,
+      "unreached": 1,
+      "tiers": [
+        {
+          "tier": 0,
+          "count": 1
+        },
+        {
+          "tier": 1,
+          "count": 2
+        }
+      ],
+      "network": "testnet",
+      "connectable": {
+        "yes": 2,
+        "no": 1,
+        "unknown": 1
+      },
+      "serves_mempool": {
+        "true": 0,
+        "false": 0,
+        "null": 4
+      },
+      "auction": {
+        "holds_slot": 0,
+        "bidding": 0,
+        "bid_before": 0,
+        "null": 4
+      }
+    }
+  }
+}

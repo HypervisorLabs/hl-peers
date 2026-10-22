@@ -1,6 +1,6 @@
 # CLIENT_SPEC — normative behaviour for every hl-peers client
 
-**Status:** normative. **Version:** 1.1.0, tracking the live API:
+**Status:** normative. **Version:** 1.1.0 + Unreleased (`network`, §10 D-U), tracking the live API:
 `spec/peer-api-v1.openapi.yaml` (a redacted copy of the producer's public
 document — see `spec/SOURCE.md`).
 
@@ -54,6 +54,7 @@ high-level helper in §7 joins them.
 | `min_poll_interval` | duration | `60 s` | guard on the polling helper only (§4.6) |
 | `cache` | ETag cache \| null | in-memory, 64 entries, LRU | §4.5 |
 | `user_agent_suffix` | string \| null | `null` | appended after a space, for downstream apps |
+| `network` | enum `mainnet` \| `testnet` \| null | `null` | the default `network` (§2.1) for every call that does not set its own. `null` sends nothing, so the server's default (mainnet) governs. **Testnet (beta)**, §10 D-U |
 
 **`base_url` resolution order**, evaluated once at client construction:
 `explicit argument` → `HL_PEER_API_BASE_URL` → `https://api.hypervisor.gg`.
@@ -97,6 +98,7 @@ caller build CSV by hand, but MUST accept a pre-joined string too.
 | builder field | wire param | client type | wire form |
 |---|---|---|---|
 | `chain` | `chain` | enum `Mainnet` \| `Testnet` | as-is |
+| `network` | `network` | enum `mainnet` \| `testnet` | as-is. Which network's graph to read; unset ⇒ omitted ⇒ mainnet. Falls back to the client's `network` option (§1). **Testnet (beta)**, §10 D-U |
 | `cc` | `cc` | list of string | CSV, upper-cased |
 | `region` | `region` | list of string | CSV |
 | `asn` | `asn` | list of string | CSV |
@@ -134,7 +136,7 @@ A client **MUST** reject before sending, with `Invalid{parameter, reason}`, only
 2. `min_uptime` outside `[0, 1]`;
 3. negative `max_tier`, `max_blocks_behind`, `max_latency_ms`; `limit` < 1;
 4. `max_latency_ms` set without `vantage` (the spec says `vantage` is required then);
-5. a value outside a **closed** enum — `chain`, `sort`, `format`, `connectable`,
+5. a value outside a **closed** enum — `chain`, `network`, `sort`, `format`, `connectable`,
    `state`, `serves_mempool` (`true`/`false`/`null`), `auction`
    (`holds_slot`/`bidding`/`bid_before`/`null`). Case matters.
 
@@ -204,6 +206,10 @@ mistake it for "no peers matched". Two consequences:
 
 Check `available` **before** `stale`: a dark subsystem reports both as false.
 
+`network` is present only on a `network=testnet` body (value `"testnet"`; decode as
+an open, nullable string). Clients expose it on every result; absent ⇒ `null`, which
+means mainnet. A testnet body also states `chain: "Testnet"`.
+
 `next_sweep_at` is the data's own clock: when the data is next refreshed. Clients expose it and the polling helper
 uses it (§4.6).
 
@@ -230,8 +236,11 @@ Decode every field in the OpenAPI `Peer` schema into a typed struct, plus an
 - **`city`** — nullable string: the id of the peer's city cluster
   (`<CC>-<city>`, e.g. `JP-tokyo`) when the producer serves city positions, else
   `null`. Never a coordinate. A server that omits the key decodes to `null`.
-- `version` is **always `null`** (not published). `region` is set
-  only for cloud-hosted peers. Documented, not asserted.
+- `version` is a nullable string. On mainnet it is **`null`** (not published).
+  On `network=testnet` (beta) it is the node's reported **hardfork version**
+  (e.g. `"1550"`), `null` when the node did not report one. Decode it as an
+  opaque string, never a number. `region` is set only for cloud-hosted peers.
+  Documented, not asserted. Testnet rows carry the same geo/ASN fields as mainnet.
 - Geo: `cc_confidence` (`high`|`medium`|`low`|null), `cc_source`
   (`cloud-range`|`db`|`db+rtt-confirmed`|null), `asn`, `org` — decode as open
   strings (unknown members pass through). `uptime` is a nullable number,
@@ -332,7 +341,9 @@ with the same guard.
 
 ### 4.3 `get_peer(ip) -> PeerEnvelope`
 
-`GET <base_path>/peers/{ip}`. `ip` is percent-encoded into the path.
+`GET <base_path>/peers/{ip}`. `ip` is percent-encoded into the path. An optional
+`network` (closed enum as §2.1, falling back to the client option) is the only query
+parameter; unset ⇒ none is sent.
 
 🔴 A malformed IPv4 is a `400`; a well-formed IPv4 that appears in no source is a
 `404`. **These two MUST NOT collapse into one client error.** A client validates
@@ -343,7 +354,7 @@ locally with a message saying the API is IPv4-only.
 
 ### 4.4 `facets(query?) -> Facets`
 
-`GET <base_path>/peers/facets`. Accepts every **filter** of §2.1 (the counts are
+`GET <base_path>/peers/facets`. Accepts every **filter** of §2.1, `network` included, (the counts are
 over the filtered set); passing `sort`, `limit`, `cursor`, `fields`, `format` or
 `try_new_peers` is an `Invalid{parameter}` client-side, because the endpoint does
 not take them and the caller would believe they applied.
@@ -410,6 +421,7 @@ The same graph, drawn live: [hypervisor.gg/network](https://hypervisor.gg/networ
 `GET <base_path>/network-map/graph` and `/network-map/summary`. Options:
 `max_tier` (int ≥ 0), `show_unreached` (bool), `hide_unreachable` (bool),
 `connectable` (list, closed enum as §2.2), `cc`, `operator`, `label` (strings),
+**`network`** (closed enum as §2.1, falling back to the client option),
 and **`serves_mempool`** and **`auction`** — typed, serialized and
 validated exactly as the §2.1 builder fields of the same name (list or pre-joined
 CSV, closed enums with the literal `null` member; an out-of-enum member is
@@ -418,7 +430,7 @@ percent-encoded as §2.3. Same ETag cache, same error mapping, same
 rate-limit/`api_version` exposure. Both endpoints are public: the anonymous tier
 calls them without a key. Result types:
 
-- graph: `{version, available, stale, generated_at, operator_nodes: {count?},
+- graph: `{version, available, stale, network?, generated_at, operator_nodes: {count?},
   node_count, edge_count, tier_count, unreached, truncated, tiers: [{tier, count}],
   nodes: [Peer], edges: [{from, to, span?}], cities?: [CityCluster],
   attribution?}` — nodes decode with the §3.2 `Peer` decoder (so each carries
@@ -450,7 +462,7 @@ block (§3.3) and, where the body was problem+json, the raw problem object.
 | `FilterUnavailable` | `filter` (= `problem.parameter`), `detail`, `problem` | `400` whose `type` ends `/filter-unavailable` |
 | `ChainNotServed` | `allowed`, `problem` | `400` … `/chain-not-served` |
 | `CursorExpired` | `problem` | `400` … `/cursor-expired` |
-| `BadRequest` | `parameter, allowed, detail, problem` | any other `400` |
+| `BadRequest` | `parameter, allowed, detail, problem` | any other `400`, including `network-not-served` (§10 D-U) |
 | `Unauthorized` | `detail, problem` | `401` |
 | `NotFound` | `detail, problem` | `404` |
 | `Unavailable` | `detail, problem` | `503`, **and** §3.1's `available: false` where a config would otherwise be built |
@@ -911,7 +923,7 @@ If built: binary/task name `hl-peers` (`mix hl_peers` in Elixir), flags exactly 
 below, and `--file-mode` rather than `--mode` for permission bits (§6.6).
 
 ```
-hl-peers query [--chain Mainnet|Testnet]
+hl-peers query [--chain Mainnet|Testnet] [--network mainnet|testnet]
                [--cc DE,NL] [--region …] [--asn …] [--tier 1] [--max-tier 2]
                [--role …] [--label sentry] [--connectable yes] [--accepting]
                [--state full] [--max-blocks-behind 5] [--min-uptime 0.95]
@@ -922,9 +934,9 @@ hl-peers query [--chain Mainnet|Testnet]
                [--auction holds_slot,bidding]
                [--format json|gossip-config] [--output json|table|ips]
 
-hl-peers facets [--cc …] [--tier …] [--role …] [--chain …]
+hl-peers facets [--cc …] [--tier …] [--role …] [--chain …] [--network …]
 
-hl-peers peer <ip>
+hl-peers peer <ip> [--network mainnet|testnet]
 
 hl-peers gossip show   --path ~/override_gossip_config.json
 hl-peers gossip validate --path …
@@ -943,6 +955,8 @@ Global: --base-url URL  --api-key KEY  --timeout SECS  --max-retries N
   Without it on `query` there is no way to reach `ChainNotServed` from the CLI,
   and a `Testnet` operator has no way to confirm from the command line that this
   deployment will not answer for their chain.
+- `--network` is accepted by `query`, `facets`, `peer` and `gossip update`, and by
+  any network-map command a CLI ships. Unset sends nothing (mainnet).
 - `--dry-run` prints the unified diff to stdout and exits **0** if there is no
   change, **0** with the diff if there is one; it never writes.
 - `--stdout` prints the rendered JSON instead of writing, so
@@ -987,7 +1001,15 @@ Every language directory **MUST** ship:
    `attribution` and the summary's `serves_mempool` / `auction` / `cities` /
    `attribution`, `network_map_graph_mempool_auction` (the two map filters on
    the wire, and their client-side `Invalid`), and `error_429_ip_flood`.
-7. **No network access in the default test run.** `HL_PEER_API_BASE_URL` pointing at
+7. **Testnet (beta):** `peers_testnet`, `peer_found_testnet`, `facets_testnet`,
+   `network_map_graph_testnet`, `network_map_summary_testnet` (the request carries
+   `network=testnet`; `network`, `chain: Testnet`, each row's `version` and geo/ASN
+   decoded), `error_400_network_not_served` (a `BadRequest` with
+   `parameter == "network"`), the client-side `Invalid{parameter: "network"}` for an
+   out-of-enum value, the client-level `network` default and its per-call override,
+   and a **mainnet golden**: with `network` unset the request URL is exactly what it
+   was before (no `network` key), on every route.
+8. **No network access in the default test run.** `HL_PEER_API_BASE_URL` pointing at
    a real host must not be required, reachable, or consulted.
 
 ---
@@ -1064,6 +1086,22 @@ decision; none is a change to the upstream spec.
   never special-case an IP, and treat `operator_nodes.count` as an informational
   nullable integer (a non-null count means the producer is running a count-only
   projection instead).
+- **D-U — `network` (testnet, beta).** The API added an optional `network`
+  parameter (`mainnet` default | `testnet`) on all five routes.
+  **Resolution:** a closed enum, lower-case, case-sensitive client-side (the
+  server lower-cases, but a client that accepts `Testnet` here would blur it with
+  `chain`, which is capitalised). Unset ⇒ omitted, so a mainnet request is
+  byte-identical to a 1.1 request and hits the same cache key. It is a builder
+  field on `/peers` and `/peers/facets`, a per-call option on `get_peer` and the
+  network map, and a client-level default (§1); a per-call value wins. `chain` and
+  `network` are different questions: `network` picks which graph is read,
+  `chain` filters/asserts what the server states; a testnet body states
+  `chain: Testnet`. `network-not-served` (testnet switched off on the deployment)
+  is a `BadRequest` with `parameter: "network"`, **not** a new error variant, so
+  existing exhaustive matches keep compiling; callers test
+  `parameter == "network"`. Testnet is **beta**: a small graph, no session data,
+  approximate `blocks_behind`, frequent resets (`available: false` for a while is
+  normal); clients do nothing special about any of it.
 - **D-N — the route prefix.** The API uses plain paths at the host root of
   `api.hypervisor.gg`. **Resolution:** `base_path`
   default `""`, one constant per client; the option remains for proxies.

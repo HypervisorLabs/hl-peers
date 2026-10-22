@@ -366,6 +366,7 @@ def gossip_programmes(rng: random.Random, count: int) -> Iterator[Dict[str, Any]
 
 QUERY_FIELDS: Dict[str, Any] = {
     "chain": ["Mainnet", "Testnet"],
+    "network": ["mainnet", "testnet"],
     "cc": [["DE"], ["de", "nl"], ["DE", "NL", "SG"], "DE,NL", ["a b"], ["Ä"], ["a,b"]],
     "region": [["eu-central"], ["eu-central", "us-east"]],
     "asn": [["AS13335"], ["AS13335", "AS15169"]],
@@ -411,6 +412,9 @@ INVALID_QUERIES: List[Dict[str, Any]] = [
     {"limit": -5},
     {"max_latency_ms": 80},
     {"chain": "mainnet"},
+    {"network": "Testnet"},
+    {"network": "TESTNET"},
+    {"network": "devnet"},
     {"sort": "TIER"},
     {"format": "gossip-config"},
     {"connectable": ["yes", "bogus"]},
@@ -510,7 +514,8 @@ def http_programmes() -> Iterator[Dict[str, Any]]:
     # client-side exactly like the /peers builder's (§2.2(5), §4.8). The server
     # entry is never reached; it is there so a client that does send gets a 200.
     for index, bad in enumerate([{"serves_mempool": "yes"}, {"auction": "holding"},
-                                 {"auction": "HOLDS_SLOT"}]):
+                                 {"auction": "HOLDS_SLOT"}, {"network": "Testnet"},
+                                 {"network": "devnet"}]):
         for op in ("network_map_graph", "network_map_summary"):
             yield {
                 "id": "http:nm_invalid:%s:%d" % (op, index),
