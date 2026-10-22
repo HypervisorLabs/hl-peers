@@ -112,6 +112,7 @@ paths:
         `last_seen` newest first; a missing value sorts last.
       parameters:
         - $ref: '#/components/parameters/Chain'
+        - $ref: '#/components/parameters/Network'
         - $ref: '#/components/parameters/Cc'
         - $ref: '#/components/parameters/Country'
         - $ref: '#/components/parameters/Region'
@@ -379,6 +380,7 @@ paths:
             format: ipv4
           example: "192.0.2.10"
         - $ref: '#/components/parameters/Chain'
+        - $ref: '#/components/parameters/Network'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/IfNoneMatch'
       responses:
@@ -455,6 +457,7 @@ paths:
         `min_uptime=0.95` returns) plus `"null"` for no reading.
       parameters:
         - $ref: '#/components/parameters/Chain'
+        - $ref: '#/components/parameters/Network'
         - $ref: '#/components/parameters/Cc'
         - $ref: '#/components/parameters/Country'
         - $ref: '#/components/parameters/Region'
@@ -584,6 +587,7 @@ paths:
         - { name: label, in: query, schema: { type: string } }
         - $ref: '#/components/parameters/ServesMempool'
         - $ref: '#/components/parameters/Auction'
+        - $ref: '#/components/parameters/Network'
         - $ref: '#/components/parameters/IfNoneMatch'
       responses:
         '200':
@@ -623,6 +627,7 @@ paths:
         - { name: label, in: query, schema: { type: string } }
         - $ref: '#/components/parameters/ServesMempool'
         - $ref: '#/components/parameters/Auction'
+        - $ref: '#/components/parameters/Network'
         - $ref: '#/components/parameters/IfNoneMatch'
       responses:
         '200':
@@ -714,6 +719,22 @@ components:
       example: 42
 
   parameters:
+    Network:
+      name: network
+      in: query
+      description: |
+        Which Hyperliquid network's peer graph to read: `mainnet` (the
+        default) or `testnet` (beta). A testnet response has the same shape,
+        adds `"network": "testnet"` and states `chain: Testnet`; a mainnet
+        response is unchanged. On testnet, operator labels, the mempool and
+        auction signals, and geography are not available. Testnet is reset and
+        upgraded often, so peers age out rather than persist. Any other value,
+        or `testnet` while it is not served, is a `400` problem
+        (`invalid-filter-value` / `network-not-served`).
+      schema:
+        type: string
+        enum: [mainnet, testnet]
+        default: mainnet
     Chain:
       name: chain
       in: query
@@ -1188,6 +1209,10 @@ components:
             The served snapshot is older than the staleness bound. Check
             `available` FIRST — a dark subsystem reports both as false.
         chain: { type: string, enum: [Mainnet, Testnet] }
+        network:
+          type: string
+          enum: [testnet]
+          description: Present only on a `network=testnet` response.
         generated_at:
           type: [string, "null"]
           format: date-time
@@ -1344,6 +1369,7 @@ components:
         version: { type: string }
         available: { type: boolean }
         stale: { type: boolean }
+        network: { type: string, enum: [testnet], description: Present only on a `network=testnet` response. }
         generated_at: { type: [string, "null"], format: date-time }
         operator_nodes:
           type: object
@@ -1402,6 +1428,7 @@ components:
         version: { type: string }
         available: { type: boolean }
         stale: { type: boolean }
+        network: { type: string, enum: [testnet], description: Present only on a `network=testnet` response. }
         generated_at: { type: [string, "null"], format: date-time }
         operator_nodes: { type: object }
         node_count: { type: integer }

@@ -208,6 +208,32 @@ identical bytes and spends quota.
 
 ---
 
+## Networks: mainnet and testnet (beta)
+
+Every route takes an optional `network` parameter: `mainnet` (the default) or
+`testnet`. Leave it out and nothing changes — a mainnet response is the same
+bytes with or without `network=mainnet`.
+
+A testnet response has the same shape as a mainnet one, adds
+`"network": "testnet"`, and states `chain: "Testnet"`. What differs is what is
+filled in:
+
+- **Same:** the graph (`nodes`, `edges`, tiers), `state`, `in_deg` / `out_deg` /
+  `feeders`, heights and `blocks_behind`, `live`, `uptime`, `last_seen`.
+- **Not on testnet:** operator labels, the `mempool` and `auction` signals
+  (always the unknown shape), and geography. A filter on one of those answers
+  `filter-unavailable`, as on mainnet when a facet is dark.
+- **Churn:** testnet is reset and upgraded often. Peers age out rather than
+  persist, and a reset can empty the graph for a while (`available: false`).
+
+`network=testnet` while the producer does not serve it is a `400`
+(`network-not-served`), and any other value is a `400` too — never a
+silently-mainnet answer. The 1.1 clients validate their query arguments and do
+not know `network` yet; until a client release adds it, call the HTTP API
+directly for testnet.
+
+---
+
 ## Privacy posture, briefly
 
 The published graph is what a scan of the public gossip network returns. The
