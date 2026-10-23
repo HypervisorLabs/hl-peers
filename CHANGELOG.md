@@ -7,6 +7,13 @@ versions follow [SemVer](https://semver.org/). Per-package entries are in
 
 ## [Unreleased]
 
+- `serves` now reflects recent confirmations; see field reference. `mempool`
+  gains `last_confirmed` and `last_attempted` in all four clients; `verdict` may
+  be `served_previously`.
+- `format=gossip_config`: new `split_client_blocks` query parameter in all four
+  clients (`splitClientBlocks` / `split_client_blocks`). With
+  `serves_mempool=true` the server defaults it to `true` and `try_new_peers` to
+  `false`; an explicit value wins.
 - Simplified the source fields; see field reference.
 - **Testnet (beta).** All four clients take an optional `network` (`mainnet` |
   `testnet`) on every route, per call or as a client-wide default; unset sends

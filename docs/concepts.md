@@ -76,10 +76,16 @@ confirmation only and documented as excluding `unknown`.
 Since the 10-01 API every peer carries two
 objects:
 
-- `mempool` = `{serves, last_checked, verdict, first_frame_ms, source}` — does
-  the peer serve the mempool stream? `source` is `probe` (observed by our
-  network probing) or null; `verdict` is an open machine token
-  (e.g. `serves`); `first_frame_ms` is the time to the first mempool message.
+- `mempool` = `{serves, last_checked, verdict, first_frame_ms, source,
+  last_confirmed, last_attempted}` — does the peer serve the mempool stream?
+  `serves: true` means a serve was confirmed within the last 48 hours
+  (`last_confirmed`). A peer last confirmed earlier has `serves: null` and
+  `verdict: served_previously`: it is not counted by `serves_mempool=true`, and it
+  is not `false`. `last_attempted` is when the peer's mempool was last checked,
+  whatever the outcome; `last_checked` is kept for compatibility (it equals
+  `last_confirmed` when there is a confirmation). `source` is `probe` (observed
+  by our network probing) or null; `verdict` is an open machine token (e.g.
+  `serves`); `first_frame_ms` is the time to the first mempool message.
   **`serves: null` means unknown — it is not "no".**
 - `auction` = `{status, slot, since, last_bid_at}` — its standing in the on-chain
   gossip read-priority auction: `holds_slot` (with the lowest `slot` held and

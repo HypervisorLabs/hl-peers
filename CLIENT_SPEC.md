@@ -112,7 +112,8 @@ caller build CSV by hand, but MUST accept a pre-joined string too.
 | `state` | `state` | list of enum `responsive`\|`open`\|`full`\|`syncing`\|`listening`\|`unreachable`\|`unknown` | CSV. `listening` = accepts inbound connections, other details unknown |
 | `serves_mempool` | `serves_mempool` | list of (boolean \| the literal `null`) | CSV of `true`/`false`/`null`; `null` = unknown, **not** `false` |
 | `auction` | `auction` | list of (enum `holds_slot`\|`bidding`\|`bid_before` \| the literal `null`) | CSV; `null` = never seen in the auction |
-| `try_new_peers` | `try_new_peers` | boolean | `true`/`false`; only meaningful with `format=gossip_config` |
+| `try_new_peers` | `try_new_peers` | boolean | `true`/`false`; only meaningful with `format=gossip_config`. Server default `true`, or `false` with `serves_mempool=true` |
+| `split_client_blocks` | `split_client_blocks` | boolean | `true`/`false`; only meaningful with `format=gossip_config`: emit the node setting that requests the transaction stream. Server default `true` with `serves_mempool=true`, else `false`; the key is omitted from the file when `false` |
 | `max_blocks_behind` | `max_blocks_behind` | integer ≥ 0 | as-is |
 | `min_uptime` | `min_uptime` | number 0..1 | as-is |
 | `max_latency_ms` | `max_latency_ms` | integer ≥ 0 | as-is |
@@ -246,9 +247,15 @@ Decode every field in the OpenAPI `Peer` schema into a typed struct, plus an
   strings (unknown members pass through). `uptime` is a nullable number,
   `feeders` a list of IPv4 strings (possibly empty).
 - 🔴 **`mempool`** — a typed sub-object `{serves: bool?, last_checked: datetime?,
-  verdict: string?, first_frame_ms: int?, source: string?}` (`source` ∈ `probe` |
+  verdict: string?, first_frame_ms: int?, source: string?, last_confirmed:
+  datetime?, last_attempted: datetime?}` (`source` ∈ `probe` |
   null, open: `probe` = observed by the producer's network probing).
-  `verdict` is an **open** machine token (e.g. `serves`) — decode as a plain
+  `serves: true` means a serve confirmed within the last 48 hours;
+  `last_confirmed` is when a serve was last confirmed, `last_attempted` when the
+  mempool was last checked (any outcome), and `last_checked` is kept for
+  compatibility (= `last_confirmed` when there is a confirmation).
+  `verdict` is an **open** machine token (e.g. `serves`, or `served_previously`
+  with `serves: null`: confirmed, but not within the last 48 hours) — decode as a plain
   string, never validate it, render an unknown token as plain text.
   `first_frame_ms` is the time to the first mempool message. **`auction`** — `{status: string?, slot: int?, since:
   datetime?, last_bid_at: datetime?}` (`status` ∈ `holds_slot` | `bidding` |
@@ -355,8 +362,8 @@ locally with a message saying the API is IPv4-only.
 ### 4.4 `facets(query?) -> Facets`
 
 `GET <base_path>/peers/facets`. Accepts every **filter** of §2.1, `network` included, (the counts are
-over the filtered set); passing `sort`, `limit`, `cursor`, `fields`, `format` or
-`try_new_peers` is an `Invalid{parameter}` client-side, because the endpoint does
+over the filtered set); passing `sort`, `limit`, `cursor`, `fields`, `format`,
+`try_new_peers` or `split_client_blocks` is an `Invalid{parameter}` client-side, because the endpoint does
 not take them and the caller would believe they applied.
 
 ### 4.5 ETag / conditional requests
@@ -401,7 +408,7 @@ OPTIONAL to *offer* but, if offered, MUST:
 
 **Required in all four clients.** Sends the query with
 `format=gossip_config` (the caller's `format` is overridden; a caller-set
-`try_new_peers` is sent). The body is parsed with `GossipConfig.parse` and returned
+`try_new_peers` / `split_client_blocks` is sent). The body is parsed with `GossipConfig.parse` and returned
 as a `GossipConfig` value plus the response metadata (`rate_limit`, `etag`,
 `from_cache`, `api_version`, `status`). The helper does **not** write; the caller
 writes with the normal `save(path, opts)` (§6.6: validate, atomic rename, mode

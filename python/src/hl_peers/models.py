@@ -230,7 +230,13 @@ class PeerMempool:
     not "does not serve", and the library never folds one into the other.
     ``source`` is ``"probe"`` (observed by our network probing) or ``None``;
     an open set, decoded as-is. ``verdict`` is an open
-    machine token (e.g. ``"serves"``): render an unknown one as plain text.
+    machine token (e.g. ``"serves"``, or ``"served_previously"``: a serve was
+    confirmed, but not within the last 48 hours): render an unknown one as
+    plain text. ``serves is True`` means a serve confirmed within the last 48
+    hours. ``last_confirmed`` is when a serve was last confirmed;
+    ``last_attempted`` when the peer's mempool was last checked (any outcome);
+    ``last_checked`` is kept for compatibility and equals ``last_confirmed``
+    when there is a confirmation.
     ``first_frame_ms`` is the time to the first mempool message.
     Timestamps are ISO-8601 strings, like every other timestamp on
     :class:`Peer`.
@@ -241,6 +247,8 @@ class PeerMempool:
     verdict: Optional[str] = None  # open set, e.g. "serves"
     first_frame_ms: Optional[int] = None
     source: Optional[str] = None  # open: "probe"
+    last_confirmed: Optional[str] = None
+    last_attempted: Optional[str] = None
 
     @classmethod
     def from_json(cls, body: Any) -> PeerMempool:
@@ -253,6 +261,8 @@ class PeerMempool:
             verdict=data.get("verdict"),
             first_frame_ms=data.get("first_frame_ms"),
             source=data.get("source"),
+            last_confirmed=data.get("last_confirmed"),
+            last_attempted=data.get("last_attempted"),
         )
 
     @property

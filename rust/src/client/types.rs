@@ -296,17 +296,27 @@ where
 #[serde(default)]
 #[non_exhaustive]
 pub struct PeerMempool {
-    /// `true` = serves, `false` = does not, [`None`] = unknown.
+    /// `true` = a serve confirmed within the last 48 hours, `false` = does
+    /// not, [`None`] = unknown, inconclusive or served previously (see
+    /// `verdict`).
     pub serves: Option<bool>,
-    /// When the verdict was last refreshed (ISO-8601, as sent).
+    /// Kept for compatibility: equals `last_confirmed` when the peer has a
+    /// confirmation, otherwise when the verdict was last observed (ISO-8601).
     pub last_checked: Option<String>,
-    /// Short machine verdict, `^[a-z0-9_-]{1,32}$`. Open set.
+    /// Short machine verdict, `^[a-z0-9_-]{1,32}$`, e.g. `serves` or
+    /// `served_previously` (a serve was confirmed, but not within the last
+    /// 48 hours). Open set.
     pub verdict: Option<String>,
     /// Milliseconds to the first mempool message, when measured.
     pub first_frame_ms: Option<i64>,
     /// `probe` (observed by our network probing), or `None` when there is
     /// no verdict. Open set.
     pub source: Option<String>,
+    /// When a serve was last confirmed (ISO-8601, as sent), or [`None`].
+    pub last_confirmed: Option<String>,
+    /// When the peer's mempool was last checked, any outcome (ISO-8601), or
+    /// [`None`].
+    pub last_attempted: Option<String>,
 }
 
 /// Standing in the on-chain gossip read-priority auction (§3.2).

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `serves` now reflects recent confirmations; see field reference. The mempool
+  object decodes `last_confirmed` and `last_attempted`.
+- `PeerQuery.splitClientBlocks()` for `format=gossip_config` (with `serves_mempool=true` the server
+  defaults it to `true` and `try_new_peers` to `false`).
 - Simplified the source fields; see field reference.
 - **Testnet (beta), `network`** (CLIENT_SPEC §10 D-U): a closed
   `'mainnet' | 'testnet'` option (new `Network` type). Builder field

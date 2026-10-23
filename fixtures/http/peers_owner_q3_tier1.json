@@ -13,7 +13,7 @@
     "status": 200,
     "headers": {
       "Content-Type": "application/json",
-      "ETag": "\"sha256-e366fe77f5830037\"",
+      "ETag": "\"sha256-4fe4155f6a2b3758\"",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
       "API-Version": "1",
       "RateLimit-Limit": "20",
@@ -63,7 +63,9 @@
             "last_checked": null,
             "verdict": null,
             "first_frame_ms": null,
-            "source": null
+            "source": null,
+            "last_confirmed": null,
+            "last_attempted": null
           },
           "auction": {
             "status": null,

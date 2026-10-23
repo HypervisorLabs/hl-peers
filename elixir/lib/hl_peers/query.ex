@@ -77,7 +77,7 @@ defmodule HlPeers.Query do
                  auction version fields)a
   @scalar_fields ~w(chain network max_tier accepting max_blocks_behind min_uptime
                     max_latency_ms vantage seen_within sort limit cursor format
-                    try_new_peers)a
+                    try_new_peers split_client_blocks)a
   @fields @csv_fields ++ @scalar_fields
 
   @enums %{
@@ -92,7 +92,7 @@ defmodule HlPeers.Query do
   }
 
   # §4.4: the facets endpoint takes every *filter*; these are not filters.
-  @not_facet_params ~w(sort limit cursor fields format try_new_peers)a
+  @not_facet_params ~w(sort limit cursor fields format try_new_peers split_client_blocks)a
 
   # Members that serialize the literal `nil` as the string "null".
   @nullable_csv ~w(tier serves_mempool auction)a
@@ -155,6 +155,12 @@ defmodule HlPeers.Query do
     `nil` (closed enum). `nil` means never seen in the auction.
     """,
     try_new_peers: "Sets `try_new_peers`; only meaningful with `format=gossip_config`.",
+    split_client_blocks: """
+    Sets `split_client_blocks`: emit the node setting that requests the
+    transaction stream. Only meaningful with `format=gossip_config`; the server
+    defaults it to `true` (and `try_new_peers` to `false`) with
+    `serves_mempool: [true]`, and omits the key when `false`.
+    """,
     network: """
     Sets `network`: `"mainnet"` or `"testnet"` (or the atoms), a closed,
     case-sensitive enum. Which network's graph to read; unset ⇒ omitted ⇒

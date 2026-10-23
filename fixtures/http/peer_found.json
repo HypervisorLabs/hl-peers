@@ -11,7 +11,7 @@
     "status": 200,
     "headers": {
       "Content-Type": "application/json",
-      "ETag": "\"sha256-53278d16fdd1dead\"",
+      "ETag": "\"sha256-e67671171a59906c\"",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
       "API-Version": "1",
       "RateLimit-Limit": "20",
@@ -61,7 +61,9 @@
           "last_checked": "2026-09-21T02:30:00Z",
           "verdict": "serves",
           "first_frame_ms": 412,
-          "source": "probe"
+          "source": "probe",
+          "last_confirmed": "2026-09-21T02:30:00Z",
+          "last_attempted": "2026-09-21T02:30:00Z"
         },
         "auction": {
           "status": "holds_slot",

@@ -138,6 +138,7 @@ paths:
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Format'
         - $ref: '#/components/parameters/TryNewPeers'
+        - $ref: '#/components/parameters/SplitClientBlocks'
         - $ref: '#/components/parameters/IfNoneMatch'
       responses:
         '200':
@@ -924,6 +925,7 @@ components:
         Serves the mempool, CSV of `true`, `false`, `null` (`null` = unknown).
         Selects on `mempool` → `serves`. `filter-unavailable` when no mempool
         data is available for this generation (see `/peers/facets`).
+        `true` selects peers whose serve was confirmed within the last 48 hours.
       schema:
         type: string
         pattern: '^(true|false|null)(,(true|false|null))*$'
@@ -1006,9 +1008,21 @@ components:
       in: query
       description: |
         `format=gossip_config` only: the emitted file's `try_new_peers`.
-        Default `true`. `false` with a one-entry list is the only evidenced
+        Default `true`, or `false` with `serves_mempool=true` (the node stays
+        on the listed peers). An explicit value always wins. `false` with a
+        one-entry list is the only evidenced
         way to pin a node.
-      schema: { type: boolean, default: true }
+      schema: { type: boolean }
+    SplitClientBlocks:
+      name: split_client_blocks
+      in: query
+      description: |
+        `format=gossip_config` only: emit the node setting that requests the
+        transaction stream (`"split_client_blocks": true`). Defaults to `true`
+        with `serves_mempool=true`, otherwise `false`. An explicit value always
+        wins. When `false` the key is omitted from the file, never written as
+        `false`.
+      schema: { type: boolean }
     IfNoneMatch:
       name: If-None-Match
       in: header
@@ -1162,20 +1176,28 @@ components:
         Does this peer serve the mempool? `source` is `probe` (observed by
         our network probing), or `null` when there is no verdict.
         🔴 `serves: null` = unknown — NOT "no".
-      required: [serves, last_checked, verdict, first_frame_ms, source]
+        `serves: true` means a serve was confirmed within the last 48 hours
+        (`last_confirmed`). A peer last confirmed earlier reads `serves: null`
+        with `verdict: served_previously`: it is not counted as serving, and it
+        is not `false`.
+      required: [serves, last_checked, verdict, first_frame_ms, source, last_confirmed, last_attempted]
       properties:
         serves:
           type: [boolean, "null"]
-          description: '`true` serves the mempool, `false` does not, `null` unknown.'
+          description: '`true` serves the mempool (confirmed within the last 48 hours), `false` does not, `null` unknown or served previously (see `verdict`).'
         last_checked:
           type: [string, "null"]
           format: date-time
-          description: When the verdict was last observed.
+          description: |
+            Kept for compatibility. Equals `last_confirmed` when the peer has a
+            confirmation (`serves` or `served_previously`); otherwise when the
+            verdict was last observed.
         verdict:
           type: [string, "null"]
           description: |
-            An open machine token for the outcome (e.g. `serves`). Render an
-            unknown token as plain text.
+            An open machine token for the outcome (e.g. `serves`,
+            `served_previously`: a serve was confirmed, but not within the last
+            48 hours). Render an unknown token as plain text.
           examples: ["serves"]
         first_frame_ms:
           type: [integer, "null"]
@@ -1187,6 +1209,16 @@ components:
           description: |
             `probe`: observed by our network probing. `null` when there is no
             verdict.
+        last_confirmed:
+          type: [string, "null"]
+          format: date-time
+          description: When a serve was last confirmed. `null` if never.
+        last_attempted:
+          type: [string, "null"]
+          format: date-time
+          description: |
+            When this peer's mempool was last checked, whatever the outcome.
+            `null` if never.
 
     AuctionSignal:
       type: object
@@ -1362,6 +1394,13 @@ components:
         try_new_peers:
           type: boolean
           description: Whether the node may discover peers beyond this list.
+        split_client_blocks:
+          type: boolean
+          enum: [true]
+          description: |
+            Present (and `true`) only when the node should request the
+            transaction stream; see the `split_client_blocks` parameter.
+            Omitted otherwise.
         chain:
           type: string
           enum: [Mainnet, Testnet]

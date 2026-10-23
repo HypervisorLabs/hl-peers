@@ -102,9 +102,15 @@ value differs.
 | `chain` | `"Mainnet"` \| `"Testnet"` | must match the node's own `--chain` |
 | `reserved_peer_ips` | array of bare strings | peers your node always admits |
 | `n_gossip_peers` | integer, `[8, 100]` | how many inbound peers your node accepts. Default 8 |
-| `split_client_blocks` | bool | optional; leave it unset unless you know you need it |
+| `split_client_blocks` | bool | optional; `true` makes the node request the transaction (mempool) stream from its peers. Omitted when false |
 
 All keys except `root_node_ips` are optional in practice.
+
+**Mempool configs.** `/peers?serves_mempool=true&format=gossip_config` emits
+`"split_client_blocks": true` and `"try_new_peers": false` by default, so the node
+requests the transaction stream and stays on the listed peers. Override either
+with the `split_client_blocks` / `try_new_peers` query parameters; with
+`split_client_blocks=false` the key is left out of the file.
 
 🪤 `n_gossip_peers` lives in **this** file, not a separate one. That is the "accept
 more inbound peers" knob.

@@ -142,6 +142,7 @@ function everyParam(): ReturnType<typeof peerQuery> {
     .servesMempool([true])
     .auction(['holds_slot'])
     .tryNewPeers(true)
+    .splitClientBlocks(true)
     .maxBlocksBehind(5)
     .minUptime(0.9)
     .maxLatencyMs(80)
@@ -161,7 +162,15 @@ test('the query builder emits exactly spec.list_peers_params', () => {
 
 test('facets refuses exactly list_peers_params minus spec.facets_params', () => {
   const refused = SPEC.list_peers_params.filter((p) => !SPEC.facets_params.includes(p));
-  assert.deepEqual(sorted(refused), sorted(['sort', 'limit', 'cursor', 'fields', 'format', 'try_new_peers']));
+  assert.deepEqual(sorted(refused), sorted([
+    'sort',
+    'limit',
+    'cursor',
+    'fields',
+    'format',
+    'try_new_peers',
+    'split_client_blocks',
+  ]));
 });
 
 test('network-map options emit exactly spec.network_map_params', () => {

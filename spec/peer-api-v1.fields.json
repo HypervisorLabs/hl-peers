@@ -30,7 +30,9 @@
   ],
   "peer_mempool": [
     "first_frame_ms",
+    "last_attempted",
     "last_checked",
+    "last_confirmed",
     "serves",
     "source",
     "verdict"
@@ -101,6 +103,7 @@
     "seen_within",
     "serves_mempool",
     "sort",
+    "split_client_blocks",
     "state",
     "tier",
     "try_new_peers",

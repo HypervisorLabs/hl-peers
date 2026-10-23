@@ -64,11 +64,19 @@ export type AuctionStatus = 'holds_slot' | 'bidding' | 'bid_before';
  * decodes to the all-`null` object, never to an error.
  */
 export interface PeerMempool {
+  /**
+   * `true`: a serve was confirmed within the last 48 hours. `null`: unknown,
+   * inconclusive, or served previously (see `verdict`). `false`: does not serve.
+   */
   readonly serves: boolean | null;
-  /** ISO-8601 instant the verdict was last observed, kept as the wire string. */
+  /**
+   * Kept for compatibility: equals `last_confirmed` when the peer has a
+   * confirmation, otherwise when the verdict was last observed. Wire string.
+   */
   readonly last_checked: string | null;
   /**
-   * Machine token for the outcome (e.g. `serves`). An **open** set, never
+   * Machine token for the outcome (e.g. `serves`, `served_previously`: a serve
+   * was confirmed, but not within the last 48 hours). An **open** set, never
    * validated: render an unknown token as plain text.
    */
   readonly verdict: string | null;
@@ -78,6 +86,10 @@ export interface PeerMempool {
    * `probe`: observed by our network probing; `null` when there is no verdict. Open set.
    */
   readonly source: 'probe' | (string & {}) | null;
+  /** ISO-8601 instant a serve was last confirmed, or `null` (never / older server). */
+  readonly last_confirmed: string | null;
+  /** ISO-8601 instant the peer's mempool was last checked, any outcome, or `null`. */
+  readonly last_attempted: string | null;
 }
 
 /**

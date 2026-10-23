@@ -13,7 +13,7 @@
     "status": 200,
     "headers": {
       "Content-Type": "application/json",
-      "ETag": "\"sha256-b72bdbbb6c24cfe1\"",
+      "ETag": "\"sha256-96e6f1a77314ef3c\"",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
       "API-Version": "1",
       "RateLimit-Limit": "20",
@@ -63,7 +63,9 @@
             "last_checked": null,
             "verdict": null,
             "first_frame_ms": null,
-            "source": null
+            "source": null,
+            "last_confirmed": null,
+            "last_attempted": null
           },
           "auction": {
             "status": null,
@@ -106,7 +108,9 @@
             "last_checked": null,
             "verdict": null,
             "first_frame_ms": null,
-            "source": null
+            "source": null,
+            "last_confirmed": null,
+            "last_attempted": null
           },
           "auction": {
             "status": null,

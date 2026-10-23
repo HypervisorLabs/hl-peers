@@ -131,6 +131,8 @@ def test_owner_query_1_whole_mempool_servers_in_de() -> None:
         verdict="serves",
         first_frame_ms=412,
         source="probe",
+        last_confirmed="2026-09-21T02:30:00Z",
+        last_attempted="2026-09-21T02:30:00Z",
     )
     assert peer.auction == PeerAuction(
         status="holds_slot",
@@ -496,6 +498,7 @@ def test_facets_accept_every_filter() -> None:
         lambda q: q.fields("id"),
         lambda q: q.format("json"),
         lambda q: q.try_new_peers(True),
+        lambda q: q.split_client_blocks(True),
     ],
 )
 def test_facets_refuse_every_non_filter(build: Any) -> None:
@@ -510,6 +513,7 @@ def test_facets_refuse_every_non_filter(build: Any) -> None:
         "fields",
         "format",
         "try_new_peers",
+        "split_client_blocks",
     }
     assert transport.requests == []
 
@@ -534,6 +538,8 @@ def test_new_builder_fields_serialize() -> None:
     assert PeerQuery().auction("bid_before", None).to_params() == {"auction": "bid_before,null"}
     assert PeerQuery().auction("bidding,null").to_params() == {"auction": "bidding,null"}
     assert PeerQuery().try_new_peers(False).to_params() == {"try_new_peers": "false"}
+    assert PeerQuery().split_client_blocks(False).to_params() == {"split_client_blocks": "false"}
+    assert PeerQuery().split_client_blocks().to_params() == {"split_client_blocks": "true"}
     assert PeerQuery().state("responsive", "open").to_query_string() == "state=responsive%2Copen"
     assert PeerQuery().serves_mempool(True).unset("serves_mempool").to_params() == {}
 
@@ -635,3 +641,20 @@ def test_async_client_parity(tmp_path: Path) -> None:
     assert out["requests_with_retries_off"] == 1
     assert out["reset_at"] == NOW + timedelta(seconds=42)
     assert sleeps == []
+
+
+def test_served_previously_decodes_with_both_timestamps() -> None:
+    m = PeerMempool.from_json(
+        {
+            "serves": None,
+            "last_checked": "2026-08-16T04:00:00Z",
+            "verdict": "served_previously",
+            "first_frame_ms": None,
+            "source": "probe",
+            "last_confirmed": "2026-08-16T04:00:00Z",
+            "last_attempted": "2026-10-23T09:00:00Z",
+        }
+    )
+    assert m.serves is None and m.verdict == "served_previously"
+    assert m.last_confirmed == "2026-08-16T04:00:00Z"
+    assert m.last_attempted == "2026-10-23T09:00:00Z"

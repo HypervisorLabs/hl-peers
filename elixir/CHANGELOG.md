@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `serves` now reflects recent confirmations; see field reference. The mempool
+  object decodes `last_confirmed` and `last_attempted`.
+- the `split_client_blocks` query option for `format=gossip_config` (with `serves_mempool=true` the server
+  defaults it to `true` and `try_new_peers` to `false`).
 - Simplified the source fields; see field reference.
 - **Testnet (beta)** — `network` (`"mainnet"` | `"testnet"`, or the atoms), a
   closed, case-sensitive enum (`CLIENT_SPEC.md` §10 D-U): a `HlPeers.Query`

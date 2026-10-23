@@ -137,6 +137,8 @@ export const PEER_MEMPOOL_FIELDS = Object.freeze([
   'verdict',
   'first_frame_ms',
   'source',
+  'last_confirmed',
+  'last_attempted',
 ] as const);
 
 export const PEER_AUCTION_FIELDS = Object.freeze([
@@ -198,6 +200,8 @@ export function decodeMempool(raw: unknown): PeerMempool {
     verdict: str(o['verdict']),
     first_frame_ms: num(o['first_frame_ms']),
     source: str(o['source']),
+    last_confirmed: str(o['last_confirmed']),
+    last_attempted: str(o['last_attempted']),
   };
 }
 

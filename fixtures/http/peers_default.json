@@ -11,7 +11,7 @@
     "status": 200,
     "headers": {
       "Content-Type": "application/json",
-      "ETag": "\"sha256-7e0a0f7bf15bd239\"",
+      "ETag": "\"sha256-b0ebc439696d65e6\"",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
       "API-Version": "1",
       "RateLimit-Limit": "20",
@@ -63,7 +63,9 @@
             "last_checked": "2026-09-21T02:30:00Z",
             "verdict": "serves",
             "first_frame_ms": 412,
-            "source": "probe"
+            "source": "probe",
+            "last_confirmed": "2026-09-21T02:30:00Z",
+            "last_attempted": "2026-09-21T02:30:00Z"
           },
           "auction": {
             "status": "holds_slot",
@@ -102,7 +104,9 @@
             "last_checked": "2026-09-21T02:30:00Z",
             "verdict": "connected_no_mempool",
             "first_frame_ms": null,
-            "source": "probe"
+            "source": "probe",
+            "last_confirmed": null,
+            "last_attempted": "2026-09-21T02:30:00Z"
           },
           "auction": {
             "status": "bid_before",
@@ -141,7 +145,9 @@
             "last_checked": "2026-09-21T02:30:00Z",
             "verdict": "serves",
             "first_frame_ms": 95,
-            "source": "probe"
+            "source": "probe",
+            "last_confirmed": "2026-09-21T02:30:00Z",
+            "last_attempted": "2026-09-21T02:30:00Z"
           },
           "auction": {
             "status": "bidding",
@@ -180,7 +186,9 @@
             "last_checked": null,
             "verdict": null,
             "first_frame_ms": null,
-            "source": null
+            "source": null,
+            "last_confirmed": null,
+            "last_attempted": null
           },
           "auction": {
             "status": null,
@@ -223,7 +231,9 @@
             "last_checked": null,
             "verdict": null,
             "first_frame_ms": null,
-            "source": null
+            "source": null,
+            "last_confirmed": null,
+            "last_attempted": null
           },
           "auction": {
             "status": null,

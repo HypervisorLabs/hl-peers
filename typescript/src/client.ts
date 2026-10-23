@@ -96,7 +96,15 @@ export const VERSION = '1.1.0';
  * The parameters `facets()` refuses (CLIENT_SPEC §4.4): the endpoint does not
  * take them, and a caller would believe they applied.
  */
-const FACETS_REFUSED = new Set(['sort', 'limit', 'cursor', 'fields', 'format', 'try_new_peers']);
+const FACETS_REFUSED = new Set([
+  'sort',
+  'limit',
+  'cursor',
+  'fields',
+  'format',
+  'try_new_peers',
+  'split_client_blocks',
+]);
 
 /** Exactly the shape of the global `fetch`, so any runtime's can be injected. */
 export type FetchLike = typeof globalThis.fetch;

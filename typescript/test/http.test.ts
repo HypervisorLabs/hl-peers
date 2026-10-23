@@ -117,6 +117,8 @@ test('a peer decodes with three-state enums unfolded and unknown keys kept', asy
     verdict: null,
     first_frame_ms: null,
     source: null,
+    last_confirmed: null,
+    last_attempted: null,
   });
   assert.deepEqual(sentry.auction, { status: null, slot: null, since: null, last_bid_at: null });
 });
@@ -161,6 +163,8 @@ test('a peer that omits mempool/auction decodes them to the all-null objects', (
     verdict: null,
     first_frame_ms: null,
     source: null,
+    last_confirmed: null,
+    last_attempted: null,
   });
   assert.deepEqual(p.auction, { status: null, slot: null, since: null, last_bid_at: null });
   // a key this version does not model lands in extra
@@ -339,6 +343,8 @@ test('owner query 1 whole: mempoolServers().cc(DE) decodes typed mempool/auction
     verdict: 'serves',
     first_frame_ms: 412,
     source: 'probe',
+    last_confirmed: '2026-09-21T02:30:00Z',
+    last_attempted: '2026-09-21T02:30:00Z',
   });
   assert.deepEqual(p.auction, {
     status: 'holds_slot',
@@ -1262,4 +1268,29 @@ test('every http fixture is reachable through the injected fetch', () => {
   }
   const onDisk = new Set(loadHttpFixtures().map((f) => f.name));
   assert.deepEqual([...onDisk].sort(), [...names].sort(), 'no fixture goes unexercised');
+});
+
+test('served_previously: serves null, the verdict and both new timestamps decode as sent', () => {
+  const p = decodePeer({
+    id: '192.0.2.9',
+    mempool: {
+      serves: null,
+      last_checked: '2026-08-16T04:00:00Z',
+      verdict: 'served_previously',
+      first_frame_ms: null,
+      source: 'probe',
+      last_confirmed: '2026-08-16T04:00:00Z',
+      last_attempted: '2026-10-23T09:00:00Z',
+    },
+  });
+  assert.equal(p.mempool.serves, null);
+  assert.equal(p.mempool.verdict, 'served_previously');
+  assert.equal(p.mempool.last_confirmed, '2026-08-16T04:00:00Z');
+  assert.equal(p.mempool.last_attempted, '2026-10-23T09:00:00Z');
+});
+
+test('splitClientBlocks is sent as split_client_blocks', () => {
+  const qs = new PeerQuery().servesMempool([true]).splitClientBlocks(false).toQueryString();
+  assert.ok(qs.includes('split_client_blocks=false'), qs);
+  assert.ok(qs.includes('serves_mempool=true'), qs);
 });

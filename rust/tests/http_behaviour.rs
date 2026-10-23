@@ -1316,6 +1316,7 @@ fn the_types_cover_exactly_the_spec_field_sets() {
         .state([hl_peers::PeerState::Full])
         .tier([TierFilter::Exact(1)])
         .try_new_peers(true)
+        .split_client_blocks(true)
         .vantage("eu")
         .version(["1"]);
     let sent: BTreeSet<String> = full
@@ -1332,6 +1333,7 @@ fn the_types_cover_exactly_the_spec_field_sets() {
     facets_ok.fields.clear();
     facets_ok.format = None;
     facets_ok.try_new_peers = None;
+    facets_ok.split_client_blocks = None;
     let facet_sent: BTreeSet<String> = facets_ok
         .to_pairs()
         .unwrap()
@@ -1810,4 +1812,25 @@ async fn the_mainnet_golden_no_network_key_on_any_route() {
         .unwrap()
         .iter()
         .all(|r| !r.url.contains("network=")));
+}
+
+#[test]
+fn served_previously_decodes_with_both_timestamps() {
+    let p: hl_peers::PeerMempool = serde_json::from_str(
+        r#"{"serves":null,"last_checked":"2026-08-16T04:00:00Z","verdict":"served_previously","first_frame_ms":null,"source":"probe","last_confirmed":"2026-08-16T04:00:00Z","last_attempted":"2026-10-23T09:00:00Z"}"#,
+    )
+    .unwrap();
+    assert_eq!(p.serves, None);
+    assert_eq!(p.verdict.as_deref(), Some("served_previously"));
+    assert_eq!(p.last_confirmed.as_deref(), Some("2026-08-16T04:00:00Z"));
+    assert_eq!(p.last_attempted.as_deref(), Some("2026-10-23T09:00:00Z"));
+}
+
+#[test]
+fn split_client_blocks_is_sent() {
+    let q = PeerQuery::new()
+        .serves_mempool([Some(true)])
+        .split_client_blocks(false);
+    let pairs = q.to_pairs().unwrap();
+    assert!(pairs.contains(&("split_client_blocks".to_string(), "false".to_string())));
 }

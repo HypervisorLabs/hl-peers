@@ -43,6 +43,7 @@ export interface PeerQueryState {
   serves_mempool?: readonly ServesMempoolMember[] | string;
   auction?: readonly AuctionMember[] | string;
   try_new_peers?: boolean;
+  split_client_blocks?: boolean;
   max_blocks_behind?: number;
   min_uptime?: number;
   max_latency_ms?: number;
@@ -287,6 +288,16 @@ export class PeerQuery {
     return this.with({ try_new_peers: value });
   }
 
+  /**
+   * `split_client_blocks` for the server's `format=gossip_config` rendering:
+   * emit the node setting that requests the transaction stream. The server
+   * defaults it to `true` (and `try_new_peers` to `false`) with
+   * `serves_mempool=true`; an explicit value wins. Only meaningful there.
+   */
+  splitClientBlocks(value: boolean): PeerQuery {
+    return this.with({ split_client_blocks: value });
+  }
+
   maxBlocksBehind(value: number): PeerQuery {
     return this.with({ max_blocks_behind: value });
   }
@@ -438,6 +449,10 @@ export class PeerQuery {
     if (s.serves_mempool !== undefined) put('serves_mempool', nullableCsv(s.serves_mempool));
     if (s.auction !== undefined) put('auction', nullableCsv(s.auction));
     put('try_new_peers', s.try_new_peers === undefined ? undefined : String(s.try_new_peers));
+    put(
+      'split_client_blocks',
+      s.split_client_blocks === undefined ? undefined : String(s.split_client_blocks),
+    );
     put(
       'max_blocks_behind',
       s.max_blocks_behind === undefined ? undefined : String(s.max_blocks_behind),

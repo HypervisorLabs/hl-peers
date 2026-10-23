@@ -202,6 +202,11 @@ pub struct PeerQuery {
     pub auction: Vec<Option<AuctionStatus>>,
     /// `try_new_peers`. Only meaningful with `format=gossip_config`.
     pub try_new_peers: Option<bool>,
+    /// `split_client_blocks`: emit the node setting that requests the
+    /// transaction stream. Only meaningful with `format=gossip_config`; the
+    /// server defaults it to `true` (and `try_new_peers` to `false`) with
+    /// `serves_mempool=true`, and omits the key when `false`.
+    pub split_client_blocks: Option<bool>,
     /// `max_blocks_behind`.
     pub max_blocks_behind: Option<i64>,
     /// `min_uptime`, 0..1.
@@ -254,6 +259,7 @@ const KNOWN_PARAMS: &[&str] = &[
     "seen_within",
     "serves_mempool",
     "sort",
+    "split_client_blocks",
     "state",
     "tier",
     "try_new_peers",
@@ -364,6 +370,12 @@ impl PeerQuery {
         /// Set `try_new_peers`. Only meaningful with `format=gossip_config`
         /// ([`Client::list_peers_as_gossip_config`](crate::Client::list_peers_as_gossip_config)).
         try_new_peers, try_new_peers, bool
+    }
+    setter! {
+        /// Set `split_client_blocks`: emit the node setting that requests the
+        /// transaction stream. Only meaningful with `format=gossip_config`; the
+        /// server defaults it to `true` with `serves_mempool=true`.
+        split_client_blocks, split_client_blocks, bool
     }
     setter! {
         /// Set `sort`.
@@ -709,6 +721,9 @@ impl PeerQuery {
         if let Some(v) = self.try_new_peers {
             put("try_new_peers", v.to_string());
         }
+        if let Some(v) = self.split_client_blocks {
+            put("split_client_blocks", v.to_string());
+        }
         if let Some(v) = self.max_blocks_behind {
             put("max_blocks_behind", v.to_string());
         }
@@ -765,7 +780,7 @@ impl PeerQuery {
 
     /// §4.4: the facets endpoint takes every **filter** of §2.1 (the counts
     /// are over the filtered set), but not `sort`, `limit`, `cursor`,
-    /// `fields`, `format` or `try_new_peers` — it would ignore them and the
+    /// `fields`, `format`, `try_new_peers` or `split_client_blocks` — it would ignore them and the
     /// caller would believe they applied. The first offender, in that order,
     /// is the `Invalid` parameter.
     pub(crate) fn validate_for_facets(&self) -> Result<()> {
@@ -776,6 +791,7 @@ impl PeerQuery {
             ("fields", !self.fields.is_empty()),
             ("format", self.format.is_some()),
             ("try_new_peers", self.try_new_peers.is_some()),
+            ("split_client_blocks", self.split_client_blocks.is_some()),
         ]
         .into_iter()
         .filter_map(|(name, set)| set.then_some(name))

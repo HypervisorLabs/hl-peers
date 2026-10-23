@@ -168,7 +168,7 @@ defmodule HlPeers.V1AdditionsTest do
       assert Enum.all?(graph.edges, &match?(%NetworkMap.Edge{}, &1))
       assert graph.api_version == "1"
       assert graph.rate_limit.limit == 20
-      assert graph.etag == "\"sha256-fa2065592db56607\""
+      assert graph.etag == "\"sha256-71af65eeb24fd31d\""
       refute graph.from_cache
     end
 
@@ -445,4 +445,32 @@ defmodule HlPeers.V1AdditionsTest do
   defp sample_value(field) when field in [:max_tier, :max_blocks_behind, :limit], do: 1
   defp sample_value(field) when field in [:accepting, :try_new_peers], do: true
   defp sample_value(_field), do: ["x"]
+
+  describe "MEMPOOL freshness fields and split_client_blocks" do
+    test "served_previously decodes with both timestamps" do
+      m =
+        Mempool.from_map(%{
+          "serves" => nil,
+          "last_checked" => "2026-08-16T04:00:00Z",
+          "verdict" => "served_previously",
+          "first_frame_ms" => nil,
+          "source" => "probe",
+          "last_confirmed" => "2026-08-16T04:00:00Z",
+          "last_attempted" => "2026-10-23T09:00:00Z"
+        })
+
+      assert m.serves == nil
+      assert m.verdict == "served_previously"
+      assert m.last_confirmed == ~U[2026-08-16 04:00:00Z]
+      assert m.last_attempted == ~U[2026-10-23 09:00:00Z]
+    end
+
+    test "split_client_blocks is sent" do
+      qs =
+        HlPeers.Query.new(serves_mempool: [true], split_client_blocks: false)
+        |> HlPeers.Query.to_query_string()
+
+      assert qs =~ "split_client_blocks=false"
+    end
+  end
 end

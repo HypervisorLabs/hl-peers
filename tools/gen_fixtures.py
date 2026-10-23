@@ -68,7 +68,8 @@ LAST_SEEN = "2026-09-21T02:34:58Z"
 
 
 UNKNOWN_MEMPOOL = {"serves": None, "last_checked": None, "verdict": None,
-                   "first_frame_ms": None, "source": None}
+                   "first_frame_ms": None, "source": None,
+                   "last_confirmed": None, "last_attempted": None}
 UNKNOWN_AUCTION = {"status": None, "slot": None, "since": None, "last_bid_at": None}
 # The live attribution strings (upstream Envelope.attribution, 2026-10-12): IPinfo
 # Lite for country/ASN; DB-IP's credit appended only where city positions are served.
@@ -80,8 +81,12 @@ SIGNUP_URL = "https://hypervisor.gg/docs/peer-api/authentication"
 
 def mempool(serves, verdict=None, first_frame_ms=None, source="probe",
             last_checked="2026-09-21T02:30:00Z"):
+    # last_confirmed: when a serve was last confirmed (serves:true means within
+    # 48 h); last_attempted: the latest check of any outcome.
     return {"serves": serves, "last_checked": last_checked, "verdict": verdict,
-            "first_frame_ms": first_frame_ms, "source": source}
+            "first_frame_ms": first_frame_ms, "source": source,
+            "last_confirmed": last_checked if serves is True else None,
+            "last_attempted": last_checked}
 
 
 def auction(status, slot=None, since=None, last_bid_at=None):

@@ -64,6 +64,7 @@ FACET_REFUSED_PARAMS: Tuple[str, ...] = (
     "limit",
     "sort",
     "try_new_peers",
+    "split_client_blocks",
 )
 
 _SEEN_WITHIN = re.compile(r"^[0-9]+[mhd]$")
@@ -339,6 +340,14 @@ class PeerQuery:
         ``format=gossip_config`` — see
         :meth:`~hl_peers.client.PeerApiClient.list_peers_as_gossip_config`."""
         return self._with("try_new_peers", value)
+
+    def split_client_blocks(self, value: Optional[bool] = True) -> PeerQuery:
+        """Emit the node setting that requests the transaction stream
+        (``"split_client_blocks": true``) in the ``format=gossip_config`` file.
+        The server defaults it to ``True`` (and ``try_new_peers`` to ``False``)
+        with ``serves_mempool=true``; an explicit value wins. When ``False`` the
+        key is omitted from the file."""
+        return self._with("split_client_blocks", value)
 
     def max_blocks_behind(self, value: Optional[int]) -> PeerQuery:
         return self._non_negative("max_blocks_behind", value)
