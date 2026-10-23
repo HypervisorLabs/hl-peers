@@ -151,7 +151,7 @@ assert_eq!(old.mempool.serves, None);   // unknown — NOT false
 ```
 
 `Peer` also carries The geo fields `cc`, `cc_confidence`
-(`high`/`medium`/`low`), `cc_source` (`cloud-range`/`db`/`db+rtt-confirmed`),
+(`high`/`medium`/`low`), `cc_source` (`cloud-range`/`db`),
 `asn`, `org`, plus `uptime` and `feeders`; the envelope carries `attribution`
 (the geo-data notice to display alongside them).
 

@@ -197,7 +197,7 @@ def http_fixtures():
 
     de1 = peer("192.0.2.10", tier=1, cc="DE", role="sentry", name="Example Operator",
                operator="Example Operator", labels=["sentry"],
-               cc_confidence="high", cc_source="db+rtt-confirmed",
+               cc_confidence="high", cc_source="db",
                mempool_=mempool(True, verdict="serves", first_frame_ms=412),
                auction_=auction("holds_slot", slot=3, since="2026-09-20T11:00:00Z",
                                 last_bid_at="2026-09-20T10:59:12Z"))
@@ -206,7 +206,7 @@ def http_fixtures():
                auction_=auction("bid_before", last_bid_at="2026-09-12T08:00:00Z"))
     sg = peer("198.51.100.7", tier=1, cc="SG", in_deg=2, out_deg=1, asn="AS64501",
               org="Example Cloud", cc_confidence="high", cc_source="cloud-range",
-              mempool_=mempool(True, verdict="serves", first_frame_ms=95, source="relay"),
+              mempool_=mempool(True, verdict="serves", first_frame_ms=95, source="probe"),
               auction_=auction("bidding", last_bid_at="2026-09-21T01:10:00Z"))
     jp = peer("198.51.100.20", tier=1, cc="JP", connectable="no", in_deg=4, out_deg=6,
               uptime=None)

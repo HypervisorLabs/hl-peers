@@ -14,7 +14,7 @@
     "status": 200,
     "headers": {
       "Content-Type": "application/json",
-      "ETag": "\"sha256-95faa2c598a21860\"",
+      "ETag": "\"sha256-ec5e94b5904403c9\"",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
       "API-Version": "1",
       "RateLimit-Limit": "20",
@@ -64,7 +64,7 @@
             "last_checked": "2026-09-21T02:30:00Z",
             "verdict": "serves",
             "first_frame_ms": 95,
-            "source": "relay"
+            "source": "probe"
           },
           "auction": {
             "status": "bidding",

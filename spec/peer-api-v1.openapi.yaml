@@ -1060,8 +1060,11 @@ components:
             `null` when `cc` is `null`.
         cc_source:
           type: [string, "null"]
-          enum: [cloud-range, db, db+rtt-confirmed, null]
-          description: Where `cc` came from. `null` when `cc` is `null`.
+          enum: [cloud-range, db, null]
+          description: |
+            Where `cc` came from. `db`: from an IP geolocation database;
+            `cloud-range`: from the provider's published IP ranges. `null` when
+            `cc` is `null`.
         region:
           type: [string, "null"]
           description: |
@@ -1156,9 +1159,9 @@ components:
     MempoolSignal:
       type: object
       description: |
-        Does this peer serve the mempool? `source` says which of our
-        measurements produced the verdict (`probe` or `relay`); `null` when
-        none has. 🔴 `serves: null` = unknown — NOT "no".
+        Does this peer serve the mempool? `source` is `probe` (observed by
+        our network probing), or `null` when there is no verdict.
+        🔴 `serves: null` = unknown — NOT "no".
       required: [serves, last_checked, verdict, first_frame_ms, source]
       properties:
         serves:
@@ -1180,8 +1183,10 @@ components:
           description: Milliseconds to the first mempool message. `null` unless `serves` is true.
         source:
           type: [string, "null"]
-          enum: [probe, relay, null]
-          description: Which of our measurements produced the verdict.
+          enum: [probe, null]
+          description: |
+            `probe`: observed by our network probing. `null` when there is no
+            verdict.
 
     AuctionSignal:
       type: object

@@ -182,7 +182,7 @@ async fn one_peers_dossier() {
     let p = &r.body.peer;
     assert_eq!(p.state, Some(hl_peers::PeerState::Responsive));
     assert_eq!(p.cc_confidence.as_deref(), Some("high"));
-    assert_eq!(p.cc_source.as_deref(), Some("db+rtt-confirmed"));
+    assert_eq!(p.cc_source.as_deref(), Some("db"));
     assert_eq!(p.org.as_deref(), Some("Example Hosting"));
     assert_eq!(p.uptime, Some(0.97));
     assert_eq!(p.mempool.serves, Some(true));
@@ -945,7 +945,7 @@ async fn auction_holds_slot_or_bidding() {
         signals,
         vec![
             ("192.0.2.10", Some("holds_slot"), Some(3), Some("probe")),
-            ("198.51.100.7", Some("bidding"), None, Some("relay")),
+            ("198.51.100.7", Some("bidding"), None, Some("probe")),
         ]
     );
 }

@@ -180,7 +180,7 @@ defmodule HlPeers.ReadmeExamplesTest do
 
     assert rows == [
              {"192.0.2.10", true, "probe", "holds_slot", 3},
-             {"198.51.100.7", true, "relay", "bidding", nil}
+             {"198.51.100.7", true, "probe", "bidding", nil}
            ]
   end
 

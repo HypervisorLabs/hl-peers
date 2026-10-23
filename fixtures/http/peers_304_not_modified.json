@@ -6,13 +6,13 @@
     "path": "/peers",
     "query": {},
     "headers": {
-      "If-None-Match": "\"sha256-71f03b5d9e1ba6c6\""
+      "If-None-Match": "\"sha256-7e0a0f7bf15bd239\""
     }
   },
   "response": {
     "status": 304,
     "headers": {
-      "ETag": "\"sha256-71f03b5d9e1ba6c6\"",
+      "ETag": "\"sha256-7e0a0f7bf15bd239\"",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
       "API-Version": "1",
       "RateLimit-Limit": "20",

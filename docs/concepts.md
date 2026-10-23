@@ -77,8 +77,8 @@ Since the 10-01 API every peer carries two
 objects:
 
 - `mempool` = `{serves, last_checked, verdict, first_frame_ms, source}` — does
-  the peer serve the mempool stream? `source` (`probe` | `relay`) says which of the
-  producer's measurements produced the verdict; `verdict` is an open machine token
+  the peer serve the mempool stream? `source` is `probe` (observed by our
+  network probing) or null; `verdict` is an open machine token
   (e.g. `serves`); `first_frame_ms` is the time to the first mempool message.
   **`serves: null` means unknown — it is not "no".**
 - `auction` = `{status, slot, since, last_bid_at}` — its standing in the on-chain
@@ -134,7 +134,8 @@ enrichment — "a hint, never truth". Prefer `label` for sentry selection.
 
 `cc` (ISO-3166-1 alpha-2; `country` is an alias) covers every published peer, with
 `cc_confidence` (`high` | `medium` | `low`: how confident the label is) and
-`cc_source` (`cloud-range` | `db` | `db+rtt-confirmed`, taken as values); a label we
+`cc_source` (`db`: an IP geolocation database; `cloud-range`: the provider's
+published IP ranges); a label we
 cannot stand behind is published as `cc: null`. `asn` / `org` come from the same
 database. `region` (`provider:region`) is the cloud provider's region, published
 **only** for cloud-hosted peers. While a deployment has no

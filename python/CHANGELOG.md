@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Simplified the source fields; see field reference.
 - **Testnet (beta)** — CLIENT_SPEC §10 D-U. A `network` option, the closed
   case-sensitive enum `"mainnet"` | `"testnet"`: `PeerQuery.network()` on
   `/peers` and `/peers/facets`, a `network=` keyword on `get_peer`,

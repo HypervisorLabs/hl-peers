@@ -206,7 +206,7 @@ def test_unknown_keys_inside_mempool_and_auction_are_ignored() -> None:
 def test_geo_fields_decode(client: PeerApiClient) -> None:
     detail = client.get_peer("192.0.2.10")
     peer = detail.peer
-    assert (peer.cc, peer.cc_confidence, peer.cc_source) == ("DE", "high", "db+rtt-confirmed")
+    assert (peer.cc, peer.cc_confidence, peer.cc_source) == ("DE", "high", "db")
     assert (peer.asn, peer.org, peer.uptime) == ("AS64500", "Example Hosting", 0.97)
     assert peer.feeders == ["192.0.2.200"]
     assert detail.envelope.attribution and "IPinfo" in detail.envelope.attribution

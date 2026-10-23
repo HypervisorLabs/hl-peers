@@ -10,8 +10,8 @@ defmodule HlPeers.Peer.Mempool do
     or not an ISO-8601 instant);
   * `verdict` — a short machine verdict (`^[a-z0-9_-]{1,32}$`), open set;
   * `first_frame_ms` — time to the first mempool message;
-  * `source` — `"probe"` or `"relay"`: which of our measurements produced the
-    verdict; an open string.
+  * `source` — `"probe"` (observed by our network probing) or `nil`; an open
+    string.
 
   Unknown keys inside the object are ignored.
   """

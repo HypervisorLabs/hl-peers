@@ -8,7 +8,7 @@ redacted, as described below.
 | fact | value |
 |---|---|
 | source | the public Peer API OpenAPI document, as served at `/openapi.yaml` |
-| copied on | 2026-10-19 |
+| copied on | 2026-10-19 (source-field descriptions refreshed 2026-10-23) |
 | `info.version` | `1.0.0` (the API document's own version, not the clients') |
 | `info.license` | MIT, like the rest of this repository; the one field that differs from the source |
 

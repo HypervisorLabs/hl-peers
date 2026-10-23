@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Simplified the source fields; see field reference.
 - **Testnet (beta), `network`** (CLIENT_SPEC §10 D-U): a closed
   `'mainnet' | 'testnet'` option (new `Network` type). Builder field
   `peerQuery().network(…)` on `listPeers` / `iterPeers` / `facets` /

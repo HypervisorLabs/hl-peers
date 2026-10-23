@@ -41,7 +41,7 @@ defmodule HlPeers.HTTPTest do
       assert page.rate_limit.policy =~ "anon-min"
       # A missing header is nil, never 0.
       assert page.rate_limit.retry_after == nil
-      assert page.etag == "\"sha256-71f03b5d9e1ba6c6\""
+      assert page.etag == "\"sha256-7e0a0f7bf15bd239\""
       assert page.api_version == "1"
       assert page.envelope.attribution =~ "IPinfo"
       refute page.from_cache
@@ -211,7 +211,7 @@ defmodule HlPeers.HTTPTest do
       assert second.rate_limit.limit == 20
 
       [_, revalidation] = FixtureAdapter.requests(recorder)
-      assert {"if-none-match", "\"sha256-71f03b5d9e1ba6c6\""} in revalidation.headers
+      assert {"if-none-match", "\"sha256-7e0a0f7bf15bd239\""} in revalidation.headers
     end
 
     test "the cache key includes whether a key was sent", %{recorder: recorder} do
@@ -225,7 +225,7 @@ defmodule HlPeers.HTTPTest do
     test "a caller-supplied If-None-Match answers NotModified, not a body", %{client: client} do
       {:ok, %NotModified{} = result} =
         HlPeers.list_peers(client, %Query{},
-          headers: [{"If-None-Match", "\"sha256-71f03b5d9e1ba6c6\""}]
+          headers: [{"If-None-Match", "\"sha256-7e0a0f7bf15bd239\""}]
         )
 
       assert result.status == 304
@@ -257,7 +257,7 @@ defmodule HlPeers.HTTPTest do
       assert result.peer.id == "192.0.2.10"
       refute Map.has_key?(result.peer, :gossip_port)
       assert result.peer.cc_confidence == "high"
-      assert result.peer.cc_source == "db+rtt-confirmed"
+      assert result.peer.cc_source == "db"
       assert result.peer.org == "Example Hosting"
       assert result.peer.uptime == 0.97
       assert result.peer.feeders == ["192.0.2.200"]

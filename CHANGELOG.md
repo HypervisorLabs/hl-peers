@@ -7,6 +7,7 @@ versions follow [SemVer](https://semver.org/). Per-package entries are in
 
 ## [Unreleased]
 
+- Simplified the source fields; see field reference.
 - **Testnet (beta).** All four clients take an optional `network` (`mainnet` |
   `testnet`) on every route, per call or as a client-wide default; unset sends
   nothing, so mainnet requests are unchanged. Envelopes decode `network`;

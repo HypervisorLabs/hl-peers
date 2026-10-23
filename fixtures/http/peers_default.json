@@ -11,7 +11,7 @@
     "status": 200,
     "headers": {
       "Content-Type": "application/json",
-      "ETag": "\"sha256-71f03b5d9e1ba6c6\"",
+      "ETag": "\"sha256-7e0a0f7bf15bd239\"",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
       "API-Version": "1",
       "RateLimit-Limit": "20",
@@ -38,7 +38,7 @@
           "role": "sentry",
           "cc": "DE",
           "cc_confidence": "high",
-          "cc_source": "db+rtt-confirmed",
+          "cc_source": "db",
           "region": null,
           "asn": "AS64500",
           "org": "Example Hosting",
@@ -141,7 +141,7 @@
             "last_checked": "2026-09-21T02:30:00Z",
             "verdict": "serves",
             "first_frame_ms": 95,
-            "source": "relay"
+            "source": "probe"
           },
           "auction": {
             "status": "bidding",

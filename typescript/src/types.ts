@@ -75,9 +75,9 @@ export interface PeerMempool {
   /** Milliseconds to the first mempool message, or `null`. */
   readonly first_frame_ms: number | null;
   /**
-   * `probe` | `relay`: which of our measurements produced the verdict. Open set.
+   * `probe`: observed by our network probing; `null` when there is no verdict. Open set.
    */
-  readonly source: 'probe' | 'relay' | (string & {}) | null;
+  readonly source: 'probe' | (string & {}) | null;
 }
 
 /**
@@ -119,8 +119,11 @@ export interface Peer {
   readonly cc: string | null;
   /** How confident the country label is: `high` \| `medium` \| `low`. Open set. */
   readonly cc_confidence: 'high' | 'medium' | 'low' | (string & {}) | null;
-  /** Source of `cc`, as published: `cloud-range` \| `db` \| `db+rtt-confirmed`. Open set. */
-  readonly cc_source: 'cloud-range' | 'db' | 'db+rtt-confirmed' | (string & {}) | null;
+  /**
+   * Source of `cc`: `db` (an IP geolocation database) \| `cloud-range` (the
+   * provider's published IP ranges). Open set.
+   */
+  readonly cc_source: 'cloud-range' | 'db' | (string & {}) | null;
   /**
    * `provider:region` (e.g. `aws:eu-central-1`). 🪤 Set **only for
    * cloud-hosted peers** (the cloud provider's region); `null`

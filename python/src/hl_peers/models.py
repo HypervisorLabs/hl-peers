@@ -228,8 +228,8 @@ class PeerMempool:
 
     🔴 ``serves is None`` means *unknown*. It is **not** ``False``: unknown is
     not "does not serve", and the library never folds one into the other.
-    ``source`` is ``"probe"`` or ``"relay"`` — which of our measurements
-    produced the verdict; an open set, decoded as-is. ``verdict`` is an open
+    ``source`` is ``"probe"`` (observed by our network probing) or ``None``;
+    an open set, decoded as-is. ``verdict`` is an open
     machine token (e.g. ``"serves"``): render an unknown one as plain text.
     ``first_frame_ms`` is the time to the first mempool message.
     Timestamps are ISO-8601 strings, like every other timestamp on
@@ -240,7 +240,7 @@ class PeerMempool:
     last_checked: Optional[str] = None
     verdict: Optional[str] = None  # open set, e.g. "serves"
     first_frame_ms: Optional[int] = None
-    source: Optional[str] = None  # open: "probe" | "relay"
+    source: Optional[str] = None  # open: "probe"
 
     @classmethod
     def from_json(cls, body: Any) -> PeerMempool:
@@ -321,7 +321,7 @@ class Peer:
     role: Optional[str] = None  # open set
     cc: Optional[str] = None
     cc_confidence: Optional[str] = None  # open: high | medium | low
-    cc_source: Optional[str] = None  # open: cloud-range | db | db+rtt-confirmed
+    cc_source: Optional[str] = None  # open: cloud-range | db
     region: Optional[str] = None  # only for cloud-hosted peers (provider:region)
     asn: Optional[str] = None
     org: Optional[str] = None

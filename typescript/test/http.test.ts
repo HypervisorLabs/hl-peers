@@ -105,7 +105,7 @@ test('a peer decodes with three-state enums unfolded and unknown keys kept', asy
   // geo fields
   const de = res.peers.find((p) => p.id === '192.0.2.10');
   assert.equal(de?.cc_confidence, 'high');
-  assert.equal(de?.cc_source, 'db+rtt-confirmed');
+  assert.equal(de?.cc_source, 'db');
   assert.equal(de?.org, 'Example Hosting');
   assert.equal(de?.uptime, 0.97);
   assert.deepEqual(de?.feeders, []);
@@ -369,7 +369,7 @@ test('auction=holds_slot,bidding decodes both standings', async () => {
     res.peers.map((p) => [p.id, p.auction.status, p.auction.slot, p.mempool.source]),
     [
       ['192.0.2.10', 'holds_slot', 3, 'probe'],
-      ['198.51.100.7', 'bidding', null, 'relay'],
+      ['198.51.100.7', 'bidding', null, 'probe'],
     ],
   );
 });

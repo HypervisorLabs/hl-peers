@@ -90,7 +90,7 @@ Named presets for the questions people actually ask: `tier1()`, `sentries()`,
 
 | filter | values | on the peer |
 |---|---|---|
-| `serves_mempool` | `true`, `false`, `null` (unknown — **not** "no") | `mempool: {serves, last_checked, verdict, first_frame_ms, source}` (`source` = `probe` or `relay`) |
+| `serves_mempool` | `true`, `false`, `null` (unknown — **not** "no") | `mempool: {serves, last_checked, verdict, first_frame_ms, source}` (`source` = `probe`: observed by our network probing) |
 | `auction` | `holds_slot`, `bidding`, `bid_before`, `null` (never seen in the auction) | `auction: {status, slot, since, last_bid_at}` |
 
 Both are closed enums (a typo is refused client-side). While the producer has no

@@ -4,6 +4,7 @@ The contract is [`CLIENT_SPEC.md`](../CLIENT_SPEC.md).
 
 ## Unreleased
 
+- Simplified the source fields; see field reference.
 - **Testnet (beta)** — `network` (`CLIENT_SPEC.md` §10 D-U). A new
   `Network` enum (`Mainnet` | `Testnet`, wire `mainnet` | `testnet`; parsing is
   case-sensitive and an unknown value is `Error::Invalid { parameter: "network" }`).

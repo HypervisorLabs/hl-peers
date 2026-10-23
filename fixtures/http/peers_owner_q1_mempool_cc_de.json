@@ -14,7 +14,7 @@
     "status": 200,
     "headers": {
       "Content-Type": "application/json",
-      "ETag": "\"sha256-92319adc8044296d\"",
+      "ETag": "\"sha256-0ad2116b103ef530\"",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
       "API-Version": "1",
       "RateLimit-Limit": "20",
@@ -41,7 +41,7 @@
           "role": "sentry",
           "cc": "DE",
           "cc_confidence": "high",
-          "cc_source": "db+rtt-confirmed",
+          "cc_source": "db",
           "region": null,
           "asn": "AS64500",
           "org": "Example Hosting",

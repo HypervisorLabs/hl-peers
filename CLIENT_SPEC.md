@@ -242,12 +242,12 @@ Decode every field in the OpenAPI `Peer` schema into a typed struct, plus an
   opaque string, never a number. `region` is set only for cloud-hosted peers.
   Documented, not asserted. Testnet rows carry the same geo/ASN fields as mainnet.
 - Geo: `cc_confidence` (`high`|`medium`|`low`|null), `cc_source`
-  (`cloud-range`|`db`|`db+rtt-confirmed`|null), `asn`, `org` — decode as open
+  (`cloud-range`|`db`|null), `asn`, `org` — decode as open
   strings (unknown members pass through). `uptime` is a nullable number,
   `feeders` a list of IPv4 strings (possibly empty).
 - 🔴 **`mempool`** — a typed sub-object `{serves: bool?, last_checked: datetime?,
   verdict: string?, first_frame_ms: int?, source: string?}` (`source` ∈ `probe` |
-  `relay`, open: which of the producer's measurements produced the verdict).
+  null, open: `probe` = observed by the producer's network probing).
   `verdict` is an **open** machine token (e.g. `serves`) — decode as a plain
   string, never validate it, render an unknown token as plain text.
   `first_frame_ms` is the time to the first mempool message. **`auction`** — `{status: string?, slot: int?, since:

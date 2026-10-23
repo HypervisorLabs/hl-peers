@@ -21,7 +21,7 @@ defmodule HlPeers.Peer do
     `"JP-tokyo"`) when the producer serves city positions, else `nil`. Never a
     coordinate.
   * Geo: `cc_confidence` (`high` | `medium` | `low`), `cc_source`
-    (`cloud-range` | `db` | `db+rtt-confirmed`), `asn` and `org` are open
+    (`cloud-range` | `db`), `asn` and `org` are open
     strings. `region` is set only for cloud-hosted peers (for cloud-hosted peers). `uptime` is a nullable fraction, `feeders` a list of IPv4
     strings (possibly empty).
   * `version` is a nullable, opaque string. On mainnet it is `nil` (not

@@ -64,7 +64,7 @@ def test_default_page_decodes_every_field(client: PeerApiClient) -> None:
     assert first.labels == ["sentry"]
     assert first.region is None and first.version is None
     assert first.asn == "AS64500" and first.org == "Example Hosting"
-    assert first.cc_confidence == "high" and first.cc_source == "db+rtt-confirmed"
+    assert first.cc_confidence == "high" and first.cc_source == "db"
     assert first.uptime == 0.97 and first.feeders == []
     assert first.state == "responsive"
     assert first.is_connectable is True
@@ -80,7 +80,7 @@ def test_three_state_fields_are_never_folded(client: PeerApiClient) -> None:
     page = client.list_peers()
     assert isinstance(page, PeerPage)
     sg = next(p for p in page.peers if p.id == "198.51.100.7")
-    assert sg.mempool.serves is True and sg.mempool.source == "relay"
+    assert sg.mempool.serves is True and sg.mempool.source == "probe"
     assert sg.connectable == "yes"
     jp = next(p for p in page.peers if p.id == "198.51.100.20")
     assert jp.connectable == "no"  # a string, never a bool

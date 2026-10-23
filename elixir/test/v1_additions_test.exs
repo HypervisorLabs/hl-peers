@@ -97,7 +97,7 @@ defmodule HlPeers.V1AdditionsTest do
 
       assert signals(page.peers) == [
                ["192.0.2.10", true, "probe", "holds_slot", 3],
-               ["198.51.100.7", true, "relay", "bidding", nil]
+               ["198.51.100.7", true, "probe", "bidding", nil]
              ]
     end
 
@@ -168,7 +168,7 @@ defmodule HlPeers.V1AdditionsTest do
       assert Enum.all?(graph.edges, &match?(%NetworkMap.Edge{}, &1))
       assert graph.api_version == "1"
       assert graph.rate_limit.limit == 20
-      assert graph.etag == "\"sha256-6cd7c782082eee66\""
+      assert graph.etag == "\"sha256-fa2065592db56607\""
       refute graph.from_cache
     end
 

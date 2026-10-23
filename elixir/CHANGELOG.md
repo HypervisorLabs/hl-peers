@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Simplified the source fields; see field reference.
 - **Testnet (beta)** — `network` (`"mainnet"` | `"testnet"`, or the atoms), a
   closed, case-sensitive enum (`CLIENT_SPEC.md` §10 D-U): a `HlPeers.Query`
   field for `list_peers/3`, `stream_peers/3` / `iter_peers/3`, `facets/3` and

@@ -304,8 +304,8 @@ pub struct PeerMempool {
     pub verdict: Option<String>,
     /// Milliseconds to the first mempool message, when measured.
     pub first_frame_ms: Option<i64>,
-    /// `probe` or `relay` — which of our measurements produced the verdict.
-    /// Open set.
+    /// `probe` (observed by our network probing), or `None` when there is
+    /// no verdict. Open set.
     pub source: Option<String>,
 }
 
@@ -353,8 +353,8 @@ pub struct Peer {
     /// How much to trust [`Peer::cc`]: `high` | `medium` | `low` (open set).
     #[serde(default)]
     pub cc_confidence: Option<String>,
-    /// Where [`Peer::cc`] came from: `cloud-range` | `db` | `db+rtt-confirmed`
-    /// (open set).
+    /// Where [`Peer::cc`] came from: `db` (an IP geolocation database) |
+    /// `cloud-range` (the provider's published IP ranges) (open set).
     #[serde(default)]
     pub cc_source: Option<String>,
     /// Cloud provider region (`provider:region`). 🪤 Set **only for cloud-hosted
