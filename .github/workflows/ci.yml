@@ -186,7 +186,9 @@ jobs:
   python:
     name: python (${{ matrix.python }})
     needs: contract
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest (26.04) has no Python 3.9 build in setup-python's
+    # manifest; 24.04 still does (3.9.25).
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
