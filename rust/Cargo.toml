@@ -7,7 +7,6 @@ description = "Client for the Hyperliquid Peer API, and an offline editor for hl
 license = "MIT"
 repository = "https://github.com/HypervisorLabs/hl-peers"
 homepage = "https://github.com/HypervisorLabs/hl-peers"
-publish = false
 readme = "README.md"
 keywords = ["hyperliquid", "hl-node", "gossip", "peers"]
 categories = ["api-bindings"]

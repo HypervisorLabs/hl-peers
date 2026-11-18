@@ -5,6 +5,14 @@ versions follow [SemVer](https://semver.org/). Per-package entries are in
 `elixir/CHANGELOG.md`, `typescript/CHANGELOG.md`, `rust/CHANGELOG.md` and
 `python/CHANGELOG.md`.
 
+## [Unreleased]
+
+- Release automation: `.github/workflows/release.yml` publishes all four packages
+  from CI on a `v*` tag, only when the `HL_PEERS_PUBLISH` repository variable
+  and that registry's credential are present (`RELEASING.md`). The TypeScript
+  package is no longer `private` and the Rust crate no longer `publish = false`.
+  No library change.
+
 ## [1.2.0] — 2026-11-18 — Testnet (beta) and mempool freshness
 
 All four packages move to 1.2.0.

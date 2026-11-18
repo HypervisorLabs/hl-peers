@@ -9,6 +9,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # release.yml runs the full gate set before it builds or publishes anything.
+  workflow_call:
 
 permissions:
   contents: read

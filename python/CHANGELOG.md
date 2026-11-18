@@ -1,5 +1,9 @@
 # Changelog — hl-peers (Python)
 
+## Unreleased
+
+- Packaging only: publishable from CI by `release.yml` (`RELEASING.md`).
+
 ## 1.2.0 — 2026-11-18
 
 - `serves` now reflects recent confirmations; see field reference. The mempool

@@ -42,8 +42,8 @@ defmodule HlPeers.MixProject do
     ]
   end
 
-  # 🔴 Local only: the owner reviews before anything is public. This package is
-  # NOT published to Hex; the entry exists so `mix docs` has metadata.
+  # Published to Hex only by .github/workflows/release.yml, behind its gates
+  # (see RELEASING.md); never by hand.
   defp package do
     [
       licenses: ["MIT"],

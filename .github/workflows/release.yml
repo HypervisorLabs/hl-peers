@@ -1,0 +1,210 @@
+name: Release
+
+# Publishes all four packages (npm `hl-peers`, crates.io `hl-peers`, PyPI
+# `hl-peers`, Hex `hl_peers`) from a `vX.Y.Z` tag.
+#
+# 🔴 Nothing is published unless ALL of these hold for a registry:
+#   1. the run is for a `v*` tag (a manual run is always a dry run);
+#   2. the repository variable HL_PEERS_PUBLISH is exactly "true";
+#   3. that registry's credential is present:
+#        npm       secret NPM_TOKEN
+#        crates.io secret CARGO_REGISTRY_TOKEN
+#        Hex       secret HEX_API_KEY
+#        PyPI      variable HL_PEERS_PYPI_TRUSTED = "true" (trusted publishing,
+#                  no token; the PyPI project must trust this workflow file)
+# A registry whose gate is closed is skipped and named in the run summary; the
+# full CI gate set and the package builds still run. See RELEASING.md.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: version + publish gates
+    runs-on: ubuntu-latest
+    outputs:
+      npm: ${{ steps.gate.outputs.npm }}
+      crates: ${{ steps.gate.outputs.crates }}
+      pypi: ${{ steps.gate.outputs.pypi }}
+      hex: ${{ steps.gate.outputs.hex }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: All four packages carry one version (and it matches the tag)
+        run: |
+          ts=$(python3 -c 'import json;print(json.load(open("typescript/package.json"))["version"])')
+          rs=$(sed -n 's/^version = "\(.*\)"$/\1/p' rust/Cargo.toml | head -1)
+          py=$(sed -n 's/^version = "\(.*\)"$/\1/p' python/pyproject.toml | head -1)
+          ex=$(sed -n 's/^  @version "\(.*\)"$/\1/p' elixir/mix.exs)
+          echo "typescript=$ts rust=$rs python=$py elixir=$ex"
+          for v in "$rs" "$py" "$ex"; do
+            [ "$v" = "$ts" ] || { echo "::error::package versions differ"; exit 1; }
+          done
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            [ "${GITHUB_REF#refs/tags/v}" = "$ts" ] \
+              || { echo "::error::tag ${GITHUB_REF#refs/tags/} != package version $ts"; exit 1; }
+          fi
+
+      - id: gate
+        name: Which registries may publish
+        env:
+          PUBLISH: ${{ vars.HL_PEERS_PUBLISH }}
+          PYPI_TRUSTED: ${{ vars.HL_PEERS_PYPI_TRUSTED }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: |
+          open() {
+            if [[ "$GITHUB_REF" == refs/tags/v* && "$PUBLISH" == "true" && -n "$1" ]]; then
+              echo true
+            else
+              echo false
+            fi
+          }
+          pypi_cred=""; [ "$PYPI_TRUSTED" = "true" ] && pypi_cred=yes
+          {
+            echo "npm=$(open "$NPM_TOKEN")"
+            echo "crates=$(open "$CARGO_REGISTRY_TOKEN")"
+            echo "hex=$(open "$HEX_API_KEY")"
+            echo "pypi=$(open "$pypi_cred")"
+          } | tee -a "$GITHUB_OUTPUT"
+          {
+            echo "### Publish gates"
+            echo "ref: \`$GITHUB_REF\`; HL_PEERS_PUBLISH: \`${PUBLISH:-unset}\`"
+            echo
+            grep -E '^(npm|crates|hex|pypi)=' "$GITHUB_OUTPUT" \
+              | sed 's/=true$/: publish/; s/=false$/: skipped (gate closed)/; s/^/- /'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  ci:
+    name: CI gates
+    needs: gate
+    uses: ./.github/workflows/ci.yml
+
+  # ---------------------------------------------------------------------
+  # Builds: always run, never publish. The publish jobs below take these
+  # exact artifacts.
+  # ---------------------------------------------------------------------
+  build-typescript:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - working-directory: typescript
+        run: |
+          npm ci
+          npm run build
+          npm pack
+      - uses: actions/upload-artifact@v4
+        with: { name: npm, path: typescript/hl-peers-*.tgz, if-no-files-found: error }
+
+  build-rust:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - working-directory: rust
+        run: cargo package --locked
+      - uses: actions/upload-artifact@v4
+        with: { name: crate, path: rust/target/package/hl-peers-*.crate, if-no-files-found: error }
+
+  build-python:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - working-directory: python
+        run: |
+          pip install --quiet build twine
+          python -m build
+          twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with: { name: python-dist, path: python/dist/, if-no-files-found: error }
+
+  build-elixir:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with: { otp-version: "27", elixir-version: "1.18" }
+      - working-directory: elixir
+        run: |
+          mix local.hex --force && mix local.rebar --force
+          mix deps.get
+          mix hex.build
+      - uses: actions/upload-artifact@v4
+        with: { name: hex, path: elixir/hl_peers-*.tar, if-no-files-found: error }
+
+  # ---------------------------------------------------------------------
+  # Publish: one job per registry, each behind its own gate.
+  # ---------------------------------------------------------------------
+  publish-npm:
+    needs: [gate, build-typescript]
+    if: needs.gate.outputs.npm == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", registry-url: "https://registry.npmjs.org" }
+      - uses: actions/download-artifact@v4
+        with: { name: npm }
+      - run: npm publish ./hl-peers-*.tgz --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-crates:
+    needs: [gate, build-rust]
+    if: needs.gate.outputs.crates == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - working-directory: rust
+        run: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  publish-pypi:
+    needs: [gate, build-python]
+    if: needs.gate.outputs.pypi == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # PyPI trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: python-dist, path: dist }
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-hex:
+    needs: [gate, build-elixir]
+    if: needs.gate.outputs.hex == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with: { otp-version: "27", elixir-version: "1.18" }
+      - working-directory: elixir
+        run: |
+          mix local.hex --force && mix local.rebar --force
+          mix deps.get
+          mix hex.publish --yes
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
