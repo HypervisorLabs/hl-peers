@@ -1,6 +1,6 @@
 # CLIENT_SPEC — normative behaviour for every hl-peers client
 
-**Status:** normative. **Version:** 1.1.0 + Unreleased (`network`, §10 D-U), tracking the live API:
+**Status:** normative. **Version:** 1.2.0 (adds `network`, §10 D-U), tracking the live API:
 `spec/peer-api-v1.openapi.yaml` (a redacted copy of the producer's public
 document — see `spec/SOURCE.md`).
 

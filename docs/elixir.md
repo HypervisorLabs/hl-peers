@@ -12,7 +12,7 @@ separate jobs and keeps them separate:
 fuller guide: the shape of the API, the decisions behind it, and the places
 where the shared spec and fixtures needed a reading.
 
-Version **1.1.0**. The default host is `https://api.hypervisor.gg`, with plain
+Version **1.2.0**. The default host is `https://api.hypervisor.gg`, with plain
 paths at the host root. Install it from git (`{:hl_peers, github:
 "HypervisorLabs/hl-peers", sparse: "elixir"}`) or as a path dependency; a Hex
 package will follow.
@@ -25,7 +25,7 @@ package will follow.
 
 `HlPeers.Client.new/1` — `:base_url` (`https://api.hypervisor.gg`),
 `:base_path` (`""`), `:api_key`, `:timeout`, `:user_agent`
-(`hl-peers-elixir/1.1.0`), `:user_agent_suffix`, `:max_retries` (**0**),
+(`hl-peers-elixir/1.2.0`), `:user_agent_suffix`, `:max_retries` (**0**),
 `:max_retry_after`, `:min_poll_interval`, `:cache`, `:adapter`,
 `:adapter_opts`, `:network` (`nil`; the default `network` for every call that
 sets none, **Testnet beta**), and the test seams `:sleep_fun` / `:rand_fun` /

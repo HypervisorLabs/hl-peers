@@ -1,6 +1,6 @@
 # Changelog — `hl-peers` (TypeScript)
 
-## Unreleased
+## 1.2.0 — 2026-11-18
 
 - `serves` now reflects recent confirmations; see field reference. The mempool
   object decodes `last_confirmed` and `last_attempted`.

@@ -1,6 +1,6 @@
 # The Python client — fuller guide
 
-Package `hl-peers` (version 1.1.0), import
+Package `hl-peers` (version 1.2.0), import
 `hl_peers`. Python ≥ 3.9, no required runtime dependencies, fully typed
 (`py.typed` ships in the wheel). It talks to `https://api.hypervisor.gg` by
 default, on plain paths at the host root.

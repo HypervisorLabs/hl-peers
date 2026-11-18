@@ -1,6 +1,6 @@
 # TypeScript client
 
-`hl-peers` **1.1.0** — a client for the Peer API at
+`hl-peers` **1.2.0** — a client for the Peer API at
 `https://api.hypervisor.gg` and an offline `override_gossip_config.json` file
 algebra, with zero runtime dependencies.
 
@@ -66,7 +66,7 @@ new PeerApiClient({
   maxRetryAfterMs: 60_000, // with retries on, above this a 429 raises instead of sleeping
   minPollIntervalMs: 60_000,
   cache,                   // EtagCache | null; default 64-entry in-memory LRU
-  userAgent, userAgentSuffix, // default user agent: hl-peers-ts/1.1.0
+  userAgent, userAgentSuffix, // default user agent: hl-peers-ts/1.2.0
   fetch, now, random, sleep,  // all injectable, for tests and runtimes
   env,                     // defaults to process.env where one exists
   network,                 // 'mainnet' | 'testnet' default for every call; unset sends nothing

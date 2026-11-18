@@ -70,7 +70,7 @@ __all__ = [
 ]
 
 #: The library version, sent in the default ``User-Agent``.
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 USER_AGENT = "hl-peers-python/%s" % VERSION
 
 #: The public API host (CLIENT_SPEC §1). Resolution order, evaluated once at

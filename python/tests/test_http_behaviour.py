@@ -525,7 +525,7 @@ def test_env_resolution_order(transport: FixtureTransport) -> None:
 def test_user_agent_and_suffix(transport: FixtureTransport, recorder: Recorder) -> None:
     client = make_client(transport, recorder, user_agent_suffix="fleetctl/2.1")
     client.list_peers()
-    assert transport.requests[-1][2]["User-Agent"].startswith("hl-peers-python/1.1.0")
+    assert transport.requests[-1][2]["User-Agent"].startswith("hl-peers-python/1.2.0")
     assert transport.requests[-1][2]["User-Agent"].endswith(" fleetctl/2.1")
 
 

@@ -74,7 +74,7 @@ from .query import PeerQuery, mempool_servers, not_full, sentries, tier1
 from .transport import HttpResponse, Transport, UrllibTransport
 from .update import UpdateResult, update_gossip_config
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 #: Short aliases, for callers who prefer them.
 Client = PeerApiClient

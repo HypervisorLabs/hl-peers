@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hl-peers"
-version = "1.1.0"
+version = "1.2.0"
 description = "Client for the Hyperliquid Peer API, and an offline editor for hl-node's override_gossip_config.json"
 readme = "README.md"
 requires-python = ">=3.9"

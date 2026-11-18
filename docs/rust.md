@@ -5,7 +5,7 @@
 people wiring it into node infrastructure.
 
 Everything below is verified against `fixtures/` and `tools/mock_server.py`.
-**Version 1.1.0**, for the live API at `https://api.hypervisor.gg`
+**Version 1.2.0**, for the live API at `https://api.hypervisor.gg`
 (plain paths at the host root).
 
 ---

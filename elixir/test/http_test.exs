@@ -492,7 +492,7 @@ defmodule HlPeers.HTTPTest do
       client = Client.new(base_url: "http://x.invalid")
 
       assert client.max_retries == 0
-      assert client.user_agent == "hl-peers-elixir/1.1.0"
+      assert client.user_agent == "hl-peers-elixir/1.2.0"
     end
   end
 

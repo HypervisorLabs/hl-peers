@@ -3,7 +3,7 @@
 A client for the Hyperliquid **Peer API**, and an offline editor for hl-node's
 `override_gossip_config.json`. Implements [`CLIENT_SPEC.md`](../CLIENT_SPEC.md).
 
-**Version 1.1.0**, tracking the live API at **`https://api.hypervisor.gg`**
+**Version 1.2.0**, tracking the live API at **`https://api.hypervisor.gg`**
 (plain paths at the host root: `/peers`, `/peers/{ip}`, `/peers/facets`,
 `/network-map/graph`, `/network-map/summary`). 
 

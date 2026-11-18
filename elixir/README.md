@@ -4,7 +4,7 @@ Query the Hyperliquid **Peer API** at `https://api.hypervisor.gg` by filter —
 tier, sentry label, country, connectable, mempool service, gossip-auction
 standing — and turn the answer into an hl-node `override_gossip_config.json`,
 byte for byte identically to the TypeScript, Rust and Python clients in this
-repo. Version **1.1.0**.
+repo. Version **1.2.0**.
 
 Two namespaces, always separate:
 
@@ -51,7 +51,7 @@ Configuration (`HlPeers.Client.new/1`): `:base_url`
 (`"https://api.hypervisor.gg"`), `:api_key`, `:timeout` (10 s per attempt),
 `:max_retries` (**0** — auto-retry is opt-in), `:max_retry_after` (60 s),
 `:min_poll_interval` (60 s), `:cache` (on, 64 entries, LRU), `:user_agent`
-(`hl-peers-elixir/1.1.0`), `:user_agent_suffix`, `:adapter`, `:clock_fun`,
+(`hl-peers-elixir/1.2.0`), `:user_agent_suffix`, `:adapter`, `:clock_fun`,
 `:base_path` (`""` — the API serves plain paths at the host root; set it only
 for a proxy that mounts the API under a prefix). `base_url` resolves explicit →
 `HL_PEER_API_BASE_URL` → `https://api.hypervisor.gg`; `api_key` resolves

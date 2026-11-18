@@ -227,7 +227,7 @@ test('no warning is logged; suppressPlaceholderWarning is an accepted no-op', as
   assert.equal(client.baseUrl, 'https://api.hypervisor.gg');
 });
 
-test('the User-Agent is hl-peers-ts/1.1.0', async () => {
+test('the User-Agent is hl-peers-ts/1.2.0', async () => {
   let ua: string | null = null;
   const client = new PeerApiClient({
     env: {},
@@ -238,7 +238,7 @@ test('the User-Agent is hl-peers-ts/1.1.0', async () => {
     }) as FetchLike,
   });
   await client.listPeers();
-  assert.equal(ua, 'hl-peers-ts/1.1.0 my-app/2');
+  assert.equal(ua, 'hl-peers-ts/1.2.0 my-app/2');
 });
 
 test('base_url and api_key resolve argument -> env -> default', () => {

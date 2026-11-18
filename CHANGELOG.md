@@ -5,7 +5,9 @@ versions follow [SemVer](https://semver.org/). Per-package entries are in
 `elixir/CHANGELOG.md`, `typescript/CHANGELOG.md`, `rust/CHANGELOG.md` and
 `python/CHANGELOG.md`.
 
-## [Unreleased]
+## [1.2.0] — 2026-11-18 — Testnet (beta) and mempool freshness
+
+All four packages move to 1.2.0.
 
 - `serves` now reflects recent confirmations; see field reference. `mempool`
   gains `last_confirmed` and `last_attempted` in all four clients; `verdict` may
@@ -25,13 +27,12 @@ versions follow [SemVer](https://semver.org/). Per-package entries are in
 - Contract: `CLIENT_SPEC.md` §10 D-U, the `Network` parameter in
   `spec/peer-api-v1.openapi.yaml`, six testnet fixtures (`*_testnet`,
   `error_400_network_not_served`) and the matching `tools/cross_check`
-  programmes. No version bump; packages stay at 1.1.0.
+  programmes.
 - TypeScript example `typescript/examples/05-peer-management.ts`: the Peer API as
   part of your own peer management (scheduled candidate refresh, per-ASN and
   per-country diversity, checking the roots already in your file, one-at-a-time
   rotation with a floor and a backup, and poll timing with backoff). Executed
-  against the fixtures by `test/examples.test.ts`. No library change; packages
-  stay at 1.1.0.
+  against the fixtures by `test/examples.test.ts`. No library change.
 
 ## [1.1.0] — 2026-10-20 — Initial release
 

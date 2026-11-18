@@ -90,7 +90,7 @@ export function normalizeBasePath(path: string): string {
 }
 
 /** The library version, as sent in `User-Agent`. */
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 
 /**
  * The parameters `facets()` refuses (CLIENT_SPEC §4.4): the endpoint does not

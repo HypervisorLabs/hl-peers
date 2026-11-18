@@ -877,7 +877,7 @@ fn the_1_0_defaults() {
         c.user_agent(),
         format!("hl-peers-rust/{}", env!("CARGO_PKG_VERSION"))
     );
-    assert_eq!(env!("CARGO_PKG_VERSION"), "1.1.0");
+    assert_eq!(env!("CARGO_PKG_VERSION"), "1.2.0");
     // An explicit argument beats everything (the env var is not consulted
     // here, so this test never depends on the runner's environment).
     let c = Client::builder()

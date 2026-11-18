@@ -2,7 +2,7 @@
 
 Client libraries for the **Hyperliquid Peer API** (`https://api.hypervisor.gg`) in
 Elixir, TypeScript, Rust and Python — one contract, four languages, identical
-behaviour. **Version 1.1.0**, for the live v1 API.
+behaviour. **Version 1.2.0**, for the live v1 API.
 
 Query the peer graph by the things a node runner actually asks about — *tier-1
 peers*, *sentries*, *peers in DE that serve the mempool*, *who holds a gossip

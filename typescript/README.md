@@ -1,6 +1,6 @@
 # `hl-peers` — TypeScript client
 
-**1.1.0**, for the Hyperliquid Peer API at `https://api.hypervisor.gg` (plain
+**1.2.0**, for the Hyperliquid Peer API at `https://api.hypervisor.gg` (plain
 paths at the host root: `/peers`, `/peers/{ip}`, `/peers/facets`,
 `/network-map/graph`, `/network-map/summary`).
 
